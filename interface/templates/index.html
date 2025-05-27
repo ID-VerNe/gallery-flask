@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='assets/app_icon.png') }}"> {# Use url_for for Flask #}
+    <title>快速选图工具</title>
+    {# Link to the CSS file using Flask's url_for #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="top-controls">
+            <div class="folder-input">
+                <label for="jpg-folder-path"> JPG 文件夹:</label>
+                <input type="text" id="jpg-folder-path" class="folder-path-input">
+                <button id="browse-jpg-button">浏览...</button>
+				{# Remove the hidden file inputs if you are solely relying on backend's Tkinter dialog triggered via API #}
+				{# <input type="file" id="browse-jpg-hidden" webkitdirectory directory multiple style="display: none;"> #}
+            </div>
+            <div class="folder-input">
+                <label for="raw-folder-path"> RAW 文件夹:</label>
+                <input type="text" id="raw-folder-path" class="folder-path-input">
+                <button id="browse-raw-button">浏览...</button>
+				{# Remove the hidden file inputs #}
+				{# <input type="file" id="browse-raw-hidden" webkitdirectory directory multiple style="display: none;"> #}
+            </div>
+            <button id="load-images-button">加载图片对</button>
+        </div>
+
+        <div class="main-content">
+            <div class="image-preview">
+                <div id="image-container" class="image-container">
+                    {# The preview image element will be dynamically created and appended here by js/elements.js #}
+                    {# <img id="preview-image" alt="Preview Image" style="display: none;"/> #}
+                </div>
+                 <div id="loading-spinner" class="loading-spinner" style="display: none;"></div>
+            </div>
+
+            <div class="thumbnail-list">
+                {# Thumbnail items will be dynamically created and added here by js/ui.js #}
+            </div>
+        </div>
+
+        <div class="bottom-controls">
+            <div id="info-label" class="info-label">请选择文件夹并加载...</div>
+            <div class="navigation-buttons">
+                <button id="prev-image-button" disabled>上一张</button>
+                <button id="next-image-button" disabled>下一张</button>
+                <button id="open-raw-button" disabled>打开 RAW</button>
+            </div>
+        </div>
+    </div>
+
+    {# --- FIX: Update script tag for ES Modules --- #}
+    {# Change the script tag to point to the main entry point and add type="module" #}
+    <script type="module" src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {# --- END FIX --- #}
+
+    {# Optional: Add a fallback script for browsers that don't support type="module" (very old browsers) #}
+    {# <script nomodule src="{{ url_for('static', filename='js/legacy-script.js') }}"></script> #}
+
+    {# Example of a simple inline script (generally avoid extensive inline scripts) #}
+    <script>
+        // Simple scripts that don't use modules can go here or in a separate non-module file
+        console.debug("index.html 模板加载完成.");
+        // Note: DOMContentLoaded is handled inside js/script.js's mainInit function.
+    </script>
+</body>
+</html>

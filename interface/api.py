@@ -1,0 +1,491 @@
+# --- ADD: Flask API Routes and Backend Logic Integration ---
+import platform
+import subprocess
+import sys
+
+from flask import Flask, request, jsonify, send_file, render_template, Response
+# Import dependencies from other layers
+from application.image_selector_app import app_state # Depend on application state instance (singleton)
+from utils.config_loader import app_config # Depend on config loader instance (singleton)
+from domain.file_manager import file_manager # Depend on file manager instance (singleton)
+# Import custom exceptions for specific error handling
+from utils.exceptions import (
+    FolderNotFoundError, NoImagePairsFoundError, ImageProcessingError,
+    InvalidIndexError, ImageSelectorError, ExternalToolError, ConfigError
+)
+
+import logging # Use standard logging
+import os # For file dialog handling, though Tkinter is planned
+
+
+# --- LOGGING SETUP (Centralized here for Flask app) ---
+# Configure logging format and level. Messages from all loggers will be captured.
+# Set level based on FLASK_DEBUG environment variable if available, otherwise INFO
+debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ('true', '1', 't')
+log_level = logging.DEBUG if debug_mode else logging.INFO
+
+logging.basicConfig(level=log_level, format='[%(asctime)s] [%(levelname)s] [%(name)s.%(funcName)s] - %(message)s')
+logger = logging.getLogger(__name__) # Logger for this module
+
+# --- Flask Application Setup ---
+# Specify template_folder and static_folder relative to this file's location within the package
+# os.path.dirname(__file__) gives the /path/to/project_root/interface directory
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+static_dir = os.path.join(os.path.dirname(__file__), 'static')
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+
+@app.route('/')
+def index():
+    """Serves the main index.html file."""
+    logger.info("Serving index.html...")
+    return render_template('index.html')
+
+
+@app.route('/api/select_folder', methods=['GET'])
+def select_folder():
+    """
+    Launches a separate process to run a native folder selection dialog
+    and returns the selected path.
+    """
+    logger.info("接收到 /api/select_folder 请求。")
+    dialog_type = request.args.get('type', 'jpg').lower()  # Default to jpg, ensure lowercase
+    if dialog_type not in ['jpg', 'raw']:
+        logger.warning(f"接收到无效的对话框类型请求: {dialog_type}")
+        # Return bad request for invalid type
+        return jsonify({"success": False,
+                        "message": f"无效的对话框类型: {dialog_type}. 必须是 'jpg' 或 'raw'."}), 400  # Use 400 for client-side invalid input
+
+    # --- Build path to the Tkinter dialog script ---
+    # Assuming the scripts/ directory is parallel to the interface/ directory
+    # Path from interface/api.py to scripts/ folder_selector_dialog.py is ../../scripts/folder_selector_dialog.py
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.join(this_dir, os.pardir, os.pardir).replace('interface\..\..','')
+    # print(project_root)# Go up two levels from interface/api.py
+    dialog_script_path = os.path.join(project_root, 'scripts', 'folder_selector_dialog.py')
+
+    # Check if the script exists
+    if not os.path.exists(dialog_script_path):
+        logger.critical(f"Tkinter 对话框脚本未找到: {dialog_script_path}")
+        return jsonify({"success": False, "message": "后端错误：文件夹选择器脚本丢失。"}), 500  # Internal server error
+
+    # --- Determine the initial directory to pass to the script ---
+    initial_dir = None
+    current_status = app_state.get_current_status()  # Get current loaded paths
+    if dialog_type == 'jpg':
+        initial_dir = current_status.get('jpg_folder') or app_config.get('DEFAULT_JPG_FOLDER')
+    elif dialog_type == 'raw':
+        initial_dir = current_status.get('raw_folder') or app_config.get('DEFAULT_RAW_FOLDER')
+
+    # Prepare command to run the script using the same Python executable running Flask
+    # Command: [sys.executable, path_to_script, initial_dir (if exists)]
+    command = [sys.executable, dialog_script_path]
+    if initial_dir:
+        command.append(initial_dir)  # Add initial directory as an argument for the script
+
+    logger.debug(f"启动 Tkinter 对话框子进程命令: {command}")
+    timeout_seconds = 60  # Wait up to 60 seconds for user interaction with the dialog
+
+    try:
+        # Run the script process and capture its output
+        # check=False: Don_t raise exception on non-zero exit status immediately
+        # capture_output=True: Capture stdout and stderr
+        # text=True (or encoding='utf-8'): Decode stdout/stderr as text
+        process_result = subprocess.run(
+            command,
+            check=False, # We handle errors based on returncode and stderr
+            capture_output=True,
+            text=True, # Use text mode
+            encoding='utf-8', # *** Specify UTF-8 encoding for decoding output streams ***
+            errors='replace', # Optional: replace decoding errors with � (useful for debugging)
+            timeout=timeout_seconds, # Set a timeout for the process
+            # hide_window=True # Optional for Windows to hide the console window of the subprocess (might need creationflags=subprocess.CREATE_NO_WINDOW)
+            creationflags=subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0 # Hide console window on Windows
+        )
+        # --- END FIX ---
+
+        # Log stderr from the subprocess for debugging errors in the dialog script
+        if process_result.stderr:
+            logger.warning(f"Tkinter 对话框子进程 STDERR 输出:\n{process_result.stderr.strip()}")
+
+        # If the script process exited with a non-zero status code, it indicates an error in the script
+        if process_result.returncode != 0:
+            logger.error(f"Tkinter 对话框子进程以非零状态码 {process_result.returncode} 退出。")
+            # The script itself logs errors to stderr, which we captured above.
+            # Return a generic error message to the frontend.
+            return jsonify(
+                {"success": False, "message": "文件夹选择器遇到内部错误，无法完成操作。"}), 500  # Internal server error
+
+        # Read the selected path from the standard output of the script
+        # The script prints the path or an empty string on cancel/failure
+        selected_path = process_result.stdout.strip()
+
+        if selected_path:
+            logger.info(f"成功从 Tkinter 子进程获取路径 ({dialog_type}): {selected_path}")
+
+            # Now save this selected path as a default path.
+            current_jpg_default = current_status.get('jpg_folder') or app_config.get('DEFAULT_JPG_FOLDER')
+            current_raw_default = current_status.get('raw_folder') or app_config.get('DEFAULT_RAW_FOLDER')
+
+            try:
+                if dialog_type == 'jpg':
+                    # Save the new JPG path, keep the current/default RAW path
+                    app_config.save_paths(selected_path, current_raw_default)
+                elif dialog_type == 'raw':
+                    # Keep the current/default JPG path, save the new RAW path
+                    app_config.save_paths(current_jpg_default, selected_path)
+                logger.info(f"成功保存选择的 {dialog_type} 文件夹路径到 .env。")
+                # Return success to the frontend, including the path
+                return jsonify({"success": True, "path": selected_path}), 200  # Return 200 on success
+            except ConfigError as e:
+                logger.error(f"保存选中的文件夹路径到 .env 时发生错误: {e}", exc_info=True)
+                # Still return the path as it was selected successfully, but indicate config saving failed
+                # This might be better handled by returning success=false with a specific code/message
+                # For now, indicate partial failure with a 500 status for the saving part.
+                return jsonify(
+                    {"success": False, "message": f"文件夹选择成功，但保存到配置失败: {e}", "path": selected_path}), 500
+
+        else:
+            # selected_path is empty string, indicating cancellation or dialog didn't return a path
+            logger.info(f"Tkinter 文件夹选择对话框 ({dialog_type}) 被取消或未返回路径。")
+            # Return a response indicating cancellation/failure (success=false, message)
+            return jsonify({"success": False,
+                            "message": "文件夹选择已取消或未选择路径。"}), 200  # Return 200 for user cancellation as it's not an error in the API handling
+
+    except subprocess.TimeoutExpired:
+        logger.error(f"等待 Tkinter 对话框子进程超时 ({timeout_seconds}秒)。")
+        # The process didn't finish within the timeout. อาจเป็นเพราะผู้ใช้ไม่ได้ตอบสนอง
+        # Return a timeout error message
+        return jsonify({"success": False,
+                        "message": f"文件夹选择超时 ({timeout_seconds}秒)。请重试或手动输入路径。"}), 500  # Internal server error due to timeout
+    except FileNotFoundError:
+        # This specific error occurs if sys.executable is not found, or the script path is fundamentally wrong
+        logger.critical(f"无法找到 Python 可执行文件 ({sys.executable}) 或脚本 ({dialog_script_path}) 启动子进程。",
+                        exc_info=True)
+        return jsonify({"success": False, "message": "后端错误：无法启动文件夹选择器。"}), 500
+    except Exception as e:
+        # Catch any other unexpected exceptions during subprocess handling itself
+        logger.error(f"处理文件夹选择子进程结果时发生意外错误 ({dialog_type}): {e}", exc_info=True)
+        return jsonify({"success": False, "message": f"处理选择时发生意外错误: {e}"}), 500
+
+@app.route('/api/load_folders', methods=['POST'])
+def load_folders():
+    """
+    Receives JPG and RAW folder paths from frontend,
+    triggers application logic to scan and load image pairs.
+    """
+    logger.info("接收到 /api/load_folders 请求。")
+    try:
+        data = request.get_json()
+        if not data:
+             logger.warning("/api/load_folders 请求体为空或不是有效的 JSON。")
+             return jsonify({"success": False, "message": "请求需要有效的 JSON 主体。"}), 400 # Bad Request
+
+        # Get paths from the JSON data
+        # Use .get() with a default of None for safety
+        jpg_folder = data.get('jpg_folder')
+        raw_folder = data.get('raw_folder')
+
+        logger.debug(f"接收到的加载请求参数: JPG='{jpg_folder}', RAW='{raw_folder}'")
+
+        # Delegate the core loading logic to the application state manager
+        # app_state.load_folders is expected to validate paths, find pairs, update state, and raise specific exceptions
+        load_result = app_state.load_folders(jpg_folder, raw_folder)
+
+        # If load_folders succeeded and returned a result
+        logger.info("/api/load_folders 处理成功。")
+        # load_result already contains {"success": true, ...}
+        return jsonify(load_result), 200 # Return 200 OK and the result data
+
+    except (FolderNotFoundError, NoImagePairsFoundError) as e:
+         # Catch specific exceptions raised by app_state/file_manager and return appropriate status/message
+         logger.warning(f"/api/load_folders 处理失败（文件夹/对未找到）: {e}")
+         # Return 404 Not Found for these specific business cases
+         return jsonify({"success": False, "message": str(e)}), 404
+    except (ImageSelectorError, ConfigError, ExternalToolError) as e:
+         # Catch other expected custom errors from lower layers
+         logger.error(f"/api/load_folders 处理失败: {e}", exc_info=True)
+         # Return 500 Internal Server Error for other backend processing issues
+         return jsonify({"success": False, "message": f"加载图片时发生错误: {e}"}), 500
+    except Exception as e:
+         # Catch any unexpected exceptions
+         logger.error(f"/api/load_folders 发生未捕获的意外错误: {e}", exc_info=True)
+         # Return a generic 500 Internal Server Error
+         return jsonify({"success": False, "message": "加载图片时发生未知的服务器内部错误。"}), 500
+
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    """Returns the current application status."""
+    # logger.info("接收到 /api/status 请求。") # Can be very chatty if frontend polls often
+    try:
+        # Delegate status retrieval to the application state manager
+        status = app_state.get_current_status()
+        # logger.debug("/api/status 处理成功。") # Use debug level for frequent requests
+        return jsonify(status), 200 # Return 200 OK and the status data
+    except Exception as e:
+         # Catch any errors during status retrieval (should be rare unless state is corrupt)
+         logger.error(f"/api/status 发生未捕获的意外错误: {e}", exc_info=True)
+         return jsonify({"success": False, "message": "获取应用状态时发生未知错误。"}), 500
+
+@app.route('/api/select_image/<int:index>', methods=['POST'])
+def select_image(index):
+    """
+    Sets the current selected image index based on the URL parameter.
+    """
+    logger.info(f"接收到 /api/select_image/{index} 请求。")
+    try:
+        # Delegate selecting index to the application state manager
+        # app_state.select_image validates the index and updates state
+        updated_status = app_state.select_image(index)
+        logger.info(f"/api/select_image/{index} 处理成功。")
+        return jsonify(updated_status), 200 # Return 200 OK and the updated status
+
+    except InvalidIndexError as e:
+         # Catch specific error when index is out of bounds
+         logger.warning(f"/api/select_image/{index} 处理失败: {e}")
+         return jsonify({"success": False, "message": str(e)}), 400 # Bad Request for invalid input
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        logger.error(f"/api/select_image/{index} 发生未捕获的意外错误: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "选择图片时发生未知的服务器内部错误。"}), 500
+
+@app.route('/api/next_image', methods=['POST'])
+def next_image():
+    """Selects the next image in the list."""
+    logger.info("接收到 /api/next_image 请求。")
+    try:
+        # Delegate navigation to the application state manager
+        # app_state.next_image handles bounds and returns new status
+        updated_status = app_state.next_image()
+        logger.info("/api/next_image 处理成功。")
+        return jsonify(updated_status), 200 # Return 200 OK and the updated status
+    except InvalidIndexError as e:
+         # Catch specific error when no images are loaded (can't navigate)
+         logger.warning(f"/api/next_image 处理失败: {e}")
+         return jsonify({"success": False, "message": str(e)}), 400 # Bad Request
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        logger.error(f"/api/next_image 发生未捕获的意外错误: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "切换到下一张图片时发生未知的服务器内部错误。"}), 500
+
+@app.route('/api/previous_image', methods=['POST'])
+def previous_image():
+    """Selects the previous image in the list."""
+    logger.info("接收到 /api/previous_image 请求。")
+    try:
+        # Delegate navigation to the application state manager
+        # app_state.prev_image handles bounds and returns new status
+        updated_status = app_state.prev_image()
+        logger.info("/api/previous_image 处理成功。")
+        return jsonify(updated_status), 200 # Return 200 OK and the updated status
+    except InvalidIndexError as e:
+         # Catch specific error when no images are loaded (can't navigate)
+         logger.warning(f"/api/previous_image 处理失败: {e}")
+         return jsonify({"success": False, "message": str(e)}), 400 # Bad Request
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        logger.error(f"/api/previous_image 发生未捕获的意外错误: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "切换到上一张图片时发生未知的服务器内部错误。"}), 500
+
+@app.route('/api/image/thumbnail/<int:index>', methods=['GET'])
+def get_thumbnail(index):
+    """Gets the thumbnail image data for the specified index."""
+    # logger.info(f"接收到 /api/image/thumbnail/{index} 请求。") # Can be chatty
+    try:
+        # Get the file path from application state
+        # app_state.get_image_file_path validates the index
+        jpg_path = app_state.get_image_file_path(index, 'jpg') # Thumbnails are from JPG
+
+        # Use file manager to get processed image data (handles caching)
+        img_byte_stream = file_manager.get_thumbnail(jpg_path)
+
+        # logger.debug(f"/api/image/thumbnail/{index} 处理成功。返回图片流。") # Use debug
+        # send_file can take a file-like object (like BytesIO)
+        return send_file(
+            img_byte_stream,
+            mimetype='image/jpeg', # Specify the content type
+            as_attachment=False # Display inline in browser/img tag
+        ), 200 # Return 200 OK
+
+    except InvalidIndexError as e:
+         # Catch specific error for invalid index
+         logger.warning(f"/api/image/thumbnail/{index} 处理失败: {e}")
+         # For image requests, 404 or a placeholder might be better. 400 for bad index is also valid.
+         # Let's return 400 to specifically indicate a request issue with the index.
+         return jsonify({"success": False, "message": str(e)}), 400
+    except FileNotFoundError as e:
+         # Catch FileNotFoundError from file_manager
+         logger.warning(f"/api/image/thumbnail/{index} 处理失败，文件未找到: {e}")
+         # Return 404 Not Found as the resource (the image file) doesn't exist
+         return jsonify({"success": False, "message": f"图片文件未找到 (索引 {index})."}), 404
+    except ImageProcessingError as e:
+         # Catch specific error during image processing
+         logger.error(f"/api/image/thumbnail/{index} 处理失败: {e}", exc_info=True)
+         # Return 500 Internal Server Error for processing issues
+         return jsonify({"success": False, "message": f"处理缩略图失败: {e}"}), 500
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        logger.error(f"/api/image/thumbnail/{index} 发生未捕获的意外错误: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "获取缩略图时发生未知的服务器内部错误。"}), 500
+
+# @app.route('/api/image/preview', methods=['GET'])
+# def get_preview_image():
+#     """Gets the main preview image data for the currently selected image."""
+#     logger.info("接收到 /api/image/preview 请求。")
+#     try:
+#         # Get the path of the currently selected JPG from application state
+#         jpg_path = app_state.get_current_jpg_path()
+#
+#         if not jpg_path:
+#             # Handle case where no image is currently selected
+#             logger.warning("/api/image/preview 请求处理失败: 没有选中的图片。")
+#             # Return 404 Not Found as the resource (current preview) doesn't exist
+#             return jsonify({"success": False, "message": "没有选中的图片可供预览。"}), 404 # Or 400 if you prefer
+#
+#         # Use file manager to get processed image data (does NOT cache previews)
+#         img_byte_stream = file_manager.get_preview_image(jpg_path)
+#
+#         logger.info("/api/image/preview 处理成功。返回图片流。")
+#         # send_file can take a file-like object (like BytesIO)
+#         return send_file(
+#             img_byte_stream,
+#             mimetype='image/jpeg', # Specify the content type
+#             as_attachment=False # Display inline
+#         ), 200 # Return 200 OK
+#
+#     except FileNotFoundError as e:
+#          # Catch FileNotFoundError from file_manager
+#          logger.warning(f"/api/image/preview 处理失败，文件未找到: {e}")
+#          return jsonify({"success": False, "message": "当前选中的图片文件未找到。"}), 404
+#     except ImageProcessingError as e:
+#          # Catch specific error during image processing
+#          logger.error(f"/api/image/preview 处理失败: {e}", exc_info=True)
+#          return jsonify({"success": False, "message": f"处理预览图片失败: {e}"}), 500
+#     except Exception as e:
+#         # Catch any other unexpected exceptions
+#         logger.error(f"/api/image/preview 发生未捕获的意外错误: {e}", exc_info=True)
+#         return jsonify({"success": False, "message": "获取预览图片时发生未知的服务器内部错误。"}), 500
+
+@app.route('/api/open_raw', methods=['POST'])
+def open_raw_file():
+    """
+    Triggers the backend to open the currently selected RAW file
+    using the system's default or configured application.
+    """
+    logger.info("接收到 /api/open_raw 请求。")
+    try:
+         # Delegate opening the file to the application state manager
+         # app_state.open_current_raw handles getting the path and calling file_manager
+         app_state.open_current_raw()
+         logger.info("/api/open_raw 处理成功。打开 RAW 指令已发送。")
+         # Return success even if the external app takes time to launch
+         return jsonify({"success": True, "message": "尝试使用外部程序打开 RAW 文件..."}), 200 # Return 200 OK
+
+    except InvalidIndexError as e:
+         # Catch specific error if no image is selected or RAW path is missing
+         logger.warning(f"/api/open_raw 处理失败: {e}")
+         return jsonify({"success": False, "message": str(e)}), 400 # Bad Request
+    except (FileNotFoundError, ExternalToolError) as e:
+         # Catch errors related to the external tool itself
+         logger.error(f"/api/open_raw 处理失败: {e}", exc_info=True)
+         # Return 500 Internal Server Error (it's a backend execution issue)
+         return jsonify({"success": False, "message": f"无法打开 RAW 文件: {e}"}), 500
+    except ImageSelectorError as e:
+         # Catch other potential custom errors from lower layers
+         logger.error(f"/api/open_raw 处理失败: {e}", exc_info=True)
+         return jsonify({"success": False, "message": f"处理打开 RAW 文件请求时发生错误: {e}"}), 500
+    except Exception as e:
+         # Catch any other unexpected exceptions
+         logger.error(f"/api/open_raw 发生未捕获的意外错误: {e}", exc_info=True)
+         return jsonify({"success": False, "message": "打开 RAW 文件时发生未知的服务器内部错误。"}), 500
+
+@app.route('/api/update_paths', methods=['POST'])
+def update_paths():
+     """
+     Receives updated default folder paths from the frontend and saves them to the .env file.
+     """
+     logger.info("接收到 /api/update_paths 请求。")
+     try:
+         data = request.get_json()
+         if not data:
+             logger.warning("/api/update_paths 请求体为空或不是有效的 JSON。")
+             return jsonify({"success": False, "message": "请求需要有效的 JSON 主体。"}), 400 # Bad Request
+
+         # Get paths from the JSON data. Use .get() to handle missing keys.
+         # Assume frontend sends both keys, possibly with empty strings.
+         jpg_folder = data.get('jpg_folder')
+         raw_folder = data.get('raw_folder')
+
+         logger.debug(f"接收到的更新路径参数: JPG='{jpg_folder}', RAW='{raw_folder}'")
+
+         # Validate input data types - ensure they are strings or None
+         if not (isinstance(jpg_folder, (str, type(None))) and isinstance(raw_folder, (str, type(None)))):
+             logger.warning("更新路径请求参数类型无效。")
+             return jsonify({"success": False, "message": "无效的路径参数类型。"}), 400
+
+         # Delegate saving to the config loader
+         # config_loader handles the actual file writing and its own exceptions
+         app_config.save_paths(jpg_folder, raw_folder)
+
+         logger.info("/api/update_paths 处理成功。默认路径已更新到 .env 文件。")
+         return jsonify({"success": True, "message": "默认文件夹路径已更新。"}), 200 # Return 200 OK
+
+     except ConfigError as e:
+          # Catch specific error from config_loader if saving fails
+          logger.error(f"/api/update_paths 处理失败: {e}", exc_info=True)
+          # Return 500 for backend saving failure
+          return jsonify({"success": False, "message": f"保存默认路径失败: {e}"}), 500
+     except Exception as e:
+         # Catch any other unexpected exceptions
+         logger.error(f"/api/update_paths 发生未捕获的意外错误: {e}", exc_info=True)
+         return jsonify({"success": False, "message": "更新默认路径时发生未知的服务器内部错误。"}), 500
+
+
+# --- FIX: Add index to the preview image endpoint ---
+@app.route('/api/image/preview/<int:index>', methods=['GET'])
+def get_preview_image(index): # Add index parameter
+    """Gets the main preview image data for the specified index."""
+    logger.info(f"接收到 /api/image/preview/{index} 请求。") # Log the index
+
+    try:
+        # --- FIX: Get the file path using the provided index, not the current state index ---
+        # Delegate getting the path for the *specified* index to the application state manager
+        # app_state.get_image_file_path validates the index against the loaded list
+        jpg_path = app_state.get_image_file_path(index, 'jpg') # Previews are from JPG (configurable if needed)
+        # --- END FIX ---
+
+        if not jpg_path:
+            # This case should theoretically be covered by app_state.get_image_file_path raising an error,
+            # but as a fallback check:
+            logger.warning(f"/api/image/preview/{index} 处理失败: 索引 {index} 对应的 JPG 路径不可用。")
+            return jsonify({"success": False, "message": f"索引 {index} 对应的图片文件路径不可用。"}), 404 # Or 500 if data is corrupt
+
+        # Use file manager to get processed image data (does NOT cache previews)
+        img_byte_stream = file_manager.get_preview_image(jpg_path)
+
+        logger.info(f"/api/image/preview/{index} 处理成功。返回图片流。")
+        # send_file can take a file-like object (like BytesIO)
+        return send_file(
+            img_byte_stream,
+            mimetype='image/jpeg', # Specify the content type
+            as_attachment=False # Display inline
+        ), 200 # Return 200 OK
+
+    except InvalidIndexError as e:
+         # Catch specific error if index is out of bounds according to app_state
+         logger.warning(f"/api/image/preview/{index} 处理失败: {e}")
+         return jsonify({"success": False, "message": str(e)}), 400 # Bad Request for invalid input
+    except FileNotFoundError as e:
+         # Catch FileNotFoundError from file_manager if the specific image file is missing on disk
+         logger.warning(f"/api/image/preview/{index} 处理失败，文件未找到: {e}")
+         return jsonify({"success": False, "message": f"索引 {index} 对应的图片文件未找到。"}), 404
+    except ImageProcessingError as e:
+         # Catch specific error during image processing
+         logger.error(f"/api/image/preview/{index} 处理失败: {e}", exc_info=True)
+         return jsonify({"success": False, "message": f"处理索引 {index} 的预览图片失败: {e}"}), 500
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        logger.error(f"/api/image/preview/{index} 发生未捕获的意外错误: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "获取预览图片时发生未知的服务器内部错误。"}), 500
+
+# --- END ADD ---

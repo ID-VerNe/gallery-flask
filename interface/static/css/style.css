@@ -1,0 +1,229 @@
+/* File Path: interface/style.css */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    background-color: #f0f0f0;
+    overscroll-behavior: none; /* Prevent pull-to-refresh on some browsers */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full view height */
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.top-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 10px; /* Space between items */
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.folder-input {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between label, input, button */
+}
+
+.folder-input label {
+    min-width: 80px; /* Ensure labels align */
+}
+
+.folder-path-input {
+    flex-grow: 1; /* Allow input to fill available space */
+    min-width: 500px; /* Minimum width for input */
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.top-controls button {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #e0e0e0;
+}
+
+.top-controls button:hover {
+    background-color: #d0d0d0;
+}
+
+.top-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.main-content {
+    display: flex;
+    flex-grow: 1; /* Allow main content to fill remaining space */
+    gap: 10px; /* Space between image preview and thumbnails */
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.image-preview {
+    flex-grow: 6; /* Takes 6 parts of available space */
+    display: flex; /* Use flex to center content */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    background-color: #ccc; /* Grey background for preview area */
+    overflow: hidden; /* Important for preventing image content from overflowing the preview area */
+    position: relative; /* Needed for absolute positioning of image/spinner */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.image-container {
+    position: relative; /* Needed for positioning the image element inside */
+    width: 100%; /* Initially fill container */
+    height: 100%; /* Initially fill container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Clip image if larger than container */
+    cursor: grab; /* Indicate pannable area */
+}
+
+.image-container img {
+    display: block; /* Remove extra space below image */
+    max-width: 100%; /* Initial fit */
+    max-height: 100%; /* Initial fit */
+    object-fit: contain; /* Ensure image fits within bounds while maintaining aspect ratio initially */
+    /* Panning will override max-width/max-height and potentially object-fit */
+    position: absolute; /* Position img absolutely within container for panning */
+    top: 50%; /* Center initially */
+    left: 50%; /* Center initially */
+    transform: translate(-50%, -50%); /* Center using transform */
+}
+
+.image-container img.panning-active {
+    cursor: grabbing;
+}
+
+/* Optional Loading Spinner */
+.loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    z-index: 10; /* Ensure spinner is on top */
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.thumbnail-list {
+    flex-grow: 2; /* Takes 1 part of available space */
+    background-color: #fff;
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: hidden; /* Hide horizontal overflow */
+    padding: 5px;
+    display: grid;
+    /* Columns will be set by JS based on config.thumbnail_columns */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Default, adjust if needed */
+    gap: 5px; /* Space between thumbnails */
+    align-content: start; /* Align items to the start, important for layout when few items */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.thumbnail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden; /* Keep content within border */
+    height: 170px; /* Placeholder fixed height */
+    cursor: pointer;
+    padding: 2px;
+    background-color: #f9f9f9;
+    transition: all 0.1s ease; /* Smooth transition for hover/selection */
+}
+
+.thumbnail-item.selected {
+    border-color: #007bff; /* Highlight color */
+    background-color: #e9f5ff; /* Highlight background */
+    border-width: 2px;
+}
+
+.thumbnail-item img {
+    display: block;
+    /* Thumbnail size will be set by JS/CSS based on config.thumbnail_width */
+    width: 150px; /* Fill item width */
+    height: auto; /* Maintain aspect ratio */
+    object-fit: contain; /* Ensure image fits padding */
+}
+
+.thumbnail-item .thumbnail-index {
+    font-size: 0.8em;
+    color: #555;
+    margin-top: 4px;
+    text-align: center;
+    width: 100%;
+    height: 150px; /* Placeholder fixed height */
+}
+
+.thumbnail-item.error .thumbnail-image {
+    background-color: #ffcccc; /* Red background for error */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9em;
+    color: #c0392b;
+    text-align: center;
+    height: 150px; /* Placeholder fixed height */
+    width: 150px; /* Placeholder fixed width */
+}
+.thumbnail-item.error img {
+    display: none; /* Hide img if error */
+}
+
+.bottom-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 5px 0;
+    border-top: 1px solid #eee; /* Separator */
+}
+
+.info-label {
+    flex-grow: 1;
+    margin-right: 10px;
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ellipsis if too long */
+    font-size: 0.9em;
+    color: #555;
+}
+
+.navigation-buttons button {
+     padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #e0e0e0;
+}
+
+.navigation-buttons button:hover {
+    background-color: #d0d0d0;
+}
+
+.navigation-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
