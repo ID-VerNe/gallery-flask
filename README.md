@@ -1,4 +1,6 @@
 
+[中文版本](README_zh-CN.md)
+
 # Quick Image Selector Tool (快速选图工具)
 
 A local web-based application built with Python Flask for quickly browsing and selecting matching JPG/JPEG and RAW image pairs from local folders. Designed to help photographers and image processing professionals efficiently review large photo sessions.
@@ -145,4 +147,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contributing
 
 Contributions are welcome! If you find a bug or think of a feature, please feel free to open an issue or submit a pull request.
-
