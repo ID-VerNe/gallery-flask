@@ -136,7 +136,7 @@ project_root/
 │   └── .env             # Environment variables and settings
 ├── main.py             # Application entry point
 ├── requirements.txt    # Python dependencies
-├── launch.bat          # Windows launcher script
+├── start_app.cmd       # Windows launcher script
 └── README.md           # This file
 ```
 
