@@ -86,7 +86,7 @@ Remember to fill in `DEFAULT_JPG_FOLDER`, `DEFAULT_RAW_FOLDER`, or `PHOTOSHOP_PA
 
 ## How to Run
 
-1.  Ensure you are in the project root directory (`<project_directory>`).
+1.  Ensure you are in the project root directory (`gallery-flask`).
 2.  Activate the virtual environment (if you used one):
     *   On Windows: `.venv\Scripts\activate`
     *   On macOS / Linux: `source .venv/bin/activate`
