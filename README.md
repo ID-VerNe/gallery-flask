@@ -81,9 +81,6 @@ PHOTOSHOP_PATH=
 # Flask application host and port
 FLASK_RUN_HOST=127.0.0.1
 FLASK_RUN_PORT=5000
-
-# Set to True or 1 for Flask debug mode أثناء development
-# FLASK_DEBUG=False
 ```
 Remember to fill in `DEFAULT_JPG_FOLDER`, `DEFAULT_RAW_FOLDER`, or `PHOTOSHOP_PATH` if you want to use default settings or specific RAW editors. The application will save successfully loaded paths back to this file.
 
