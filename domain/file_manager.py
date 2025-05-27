@@ -1,6 +1,6 @@
 import os
 import logging
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ExifTags
 import subprocess
 import platform
 import hashlib
@@ -236,6 +236,55 @@ class FileManager:
             print(f"--- Unexpected Error during thumbnail processing {file_path}: {e} ---", file=sys.stderr,
                   flush=True)
             return None
+
+    def get_image_metadata(self, file_path):
+        logger.info(f"尝试获取图片元数据 for: {os.path.basename(file_path)}")
+        metadata = {
+            "date_taken": None,
+            "camera_make": None,
+            "camera_model": None,
+            "lens_model": None
+        }
+        try:
+            with Image.open(file_path) as img:
+                exif_data = img._getexif()
+                if exif_data:
+                    exif = {
+                        ExifTags.TAGS[k]: v
+                        for k, v in exif_data.items()
+                        if k in ExifTags.TAGS
+                    }
+
+                    # 拍摄日期
+                    if 'DateTimeOriginal' in exif:
+                        metadata['date_taken'] = exif['DateTimeOriginal']
+                    elif 'DateTimeDigitized' in exif:
+                        metadata['date_taken'] = exif['DateTimeDigitized']
+                    elif 'DateTime' in exif:
+                        metadata['date_taken'] = exif['DateTime']
+
+                    # 相机制造商和型号
+                    if 'Make' in exif:
+                        metadata['camera_make'] = exif['Make']
+                    if 'Model' in exif:
+                        metadata['camera_model'] = exif['Model']
+
+                    # 镜头型号 (通常在 Exif IFD 或 MakerNote 中，这里只尝试常见的标签)
+                    if 'LensModel' in exif:
+                        metadata['lens_model'] = exif['LensModel']
+                    elif 'Lens' in exif: # Some cameras might use 'Lens'
+                        metadata['lens_model'] = exif['Lens']
+
+        except Exception as e:
+            logger.warning(f"无法从文件 '{file_path}' 读取 EXIF 数据: {e}", exc_info=True)
+            # 如果无法读取，则返回 None 或默认值
+            return {
+                "date_taken": None,
+                "camera_make": None,
+                "camera_model": None,
+                "lens_model": None
+            }
+        return metadata
 
     def get_preview_image(self, file_path):
         logger.info(f"尝试获取预览图片 for: {os.path.basename(file_path)}")

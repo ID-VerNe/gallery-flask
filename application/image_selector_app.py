@@ -27,6 +27,11 @@ class ImageSelectorApp:
         try:
             found_pairs = file_manager.find_image_pairs(jpg_folder_path, raw_folder_path)
 
+            # 获取并存储每张图片的元数据
+            for pair in found_pairs:
+                metadata = file_manager.get_image_metadata(pair['jpg_path'])
+                pair['metadata'] = metadata # 将元数据添加到图片对中
+
             self._image_pairs = found_pairs
             self._current_index = 0 if self._image_pairs else -1
             self._jpg_folder = jpg_folder_path
@@ -70,11 +75,13 @@ class ImageSelectorApp:
         current_pair = None
         jpg_name = None
         raw_name = None
+        metadata = {} # 为 metadata 设置默认值
 
         if 0 <= self._current_index < len(self._image_pairs):
              current_pair = self._image_pairs[self._current_index]
              jpg_name = os.path.basename(current_pair.get('jpg_path')) if current_pair.get('jpg_path') else None
              raw_name = os.path.basename(current_pair.get('raw_path')) if current_pair.get('raw_path') else None
+             metadata = current_pair.get('metadata', {}) # 获取元数据
 
         status = {
             "success": True,
@@ -85,6 +92,7 @@ class ImageSelectorApp:
             "jpg_folder": self._jpg_folder,
             "raw_folder": self._raw_folder,
             "is_loaded": self._is_loaded,
+            "current_image_metadata": metadata # 添加元数据到状态中
         }
         return status
 

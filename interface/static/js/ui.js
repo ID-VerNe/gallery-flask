@@ -32,7 +32,7 @@ export function updateUI() {
  * Updates the informational label text.
  */
 export function updateInfoLabel() {
-    const { currentIndex, totalImages, jpgFolder, rawFolder, isLoaded, isLoading } = appState;
+    const { currentIndex, totalImages, jpgFolder, rawFolder, isLoaded, isLoading, current_image_metadata } = appState;
 
     let text = '请选择文件夹并加载...';
     if (isLoading) {
@@ -40,6 +40,26 @@ export function updateInfoLabel() {
     } else if (isLoaded && totalImages > 0) {
         const displayIndex = currentIndex + 1;
         text = ` ${displayIndex}/${totalImages}`;
+
+        if (current_image_metadata) {
+            const { date_taken, camera_make, camera_model, lens_model } = current_image_metadata;
+
+            if (date_taken) {
+                // 格式化日期，例如 "YYYY:MM:DD HH:MM:SS" -> "YYYY-MM-DD HH:MM"
+                const formattedDate = date_taken.replace(/(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3').substring(0, 16);
+                text += ` | 日期: ${formattedDate}`;
+            }
+            if (camera_make && camera_model) {
+                text += ` | 相机: ${camera_make} ${camera_model}`;
+            } else if (camera_make) {
+                text += ` | 相机: ${camera_make}`;
+            } else if (camera_model) {
+                text += ` | 相机: ${camera_model}`;
+            }
+            if (lens_model) {
+                text += ` | 镜头: ${lens_model}`;
+            }
+        }
     } else if (isLoaded && totalImages === 0) {
         text = '在选择的文件夹中没有找到匹配的图片对。';
     } else if (jpgFolder || rawFolder) {

@@ -47,4 +47,3 @@ if __name__ == '__main__':
 
     run_app()
 
-    logger.info("Application main entry point finished.")

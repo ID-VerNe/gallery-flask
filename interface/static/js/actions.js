@@ -89,6 +89,7 @@ export async function loadFoldersAction() {
             appState.jpgFolder = response.jpg_folder;
             appState.rawFolder = response.raw_folder;
             appState.isLoaded = true;
+            appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
 
             ui.renderThumbnails(appState.imagePairsInfo);
             ui.updateUI();
@@ -144,6 +145,7 @@ export async function selectImageAction(index) {
 
         if (response && response.success) {
             appState.currentIndex = response.current_index;
+            appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
             ui.updateUI();
         } else {
             const message = response && response.message ? `后端错误: ${response.message}` : '选择图片时发生未知错误。';
@@ -177,6 +179,7 @@ export async function nextImageAction() {
 
         if (response && response.success) {
             appState.currentIndex = response.current_index;
+            appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
             ui.updateUI();
         } else {
             const message = response && response.message ? `后端错误: ${response.message}` : '切换到下一张图片时发生未知错误。';
@@ -210,6 +213,7 @@ export async function prevImageAction() {
 
         if (response && response.success) {
             appState.currentIndex = response.current_index;
+            appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
             ui.updateUI();
         } else {
             const message = response && response.message ? `后端错误: ${response.message}` : '切换到上一张图片时发生未知错误。';
@@ -289,6 +293,7 @@ export async function initialLoadAction() {
             appState.jpgFolder = statusResponse.jpg_folder;
             appState.rawFolder = statusResponse.raw_folder;
             appState.isLoaded = statusResponse.is_loaded;
+            appState.current_image_metadata = statusResponse.current_image_metadata || {}; // 添加此行
 
             const elements = ui.getElements();
             if (elements.jpgFolderPathInput) elements.jpgFolderPathInput.value = appState.jpgFolder;
