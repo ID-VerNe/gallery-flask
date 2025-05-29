@@ -44,7 +44,9 @@ class FileManager:
         if not os.path.isdir(jpg_folder_path):
             logger.error(f"JPG 文件夹不存在或不是目录: {jpg_folder_path}")
             raise FolderNotFoundError(f"JPG 文件夹不存在或不是目录: {jpg_folder_path}")
-        if not os.path.isdir(raw_folder_path):
+
+        is_viewer_mode = not bool(raw_folder_path) or not os.path.isdir(raw_folder_path)
+        if not is_viewer_mode and not os.path.isdir(raw_folder_path):
             logger.error(f"RAW 文件夹不存在或不是目录: {raw_folder_path}")
             raise FolderNotFoundError(f"RAW 文件夹不存在或不是目录: {raw_folder_path}")
 
@@ -63,40 +65,58 @@ class FileManager:
              raise ImageSelectorError(f"无法读取 JPG 文件夹内容: {jpg_folder_path}") from e
 
         raw_files = {}
-        logger.debug(f"扫描 RAW 文件夹: {raw_folder_path}")
-        try:
-            for filename in os.listdir(raw_folder_path):
-                name, ext = os.path.splitext(filename)
-                if ext.lower() in raw_extensions:
-                    raw_files[name.lower()] = os.path.join(raw_folder_path, filename)
-        except OSError as e:
-             logger.error(f"扫描 RAW 文件夹时发生错误: {raw_folder_path}, 错误: {e}", exc_info=True)
-             raise ImageSelectorError(f"无法读取 RAW 文件夹内容: {raw_folder_path}") from e
+        if not is_viewer_mode:
+            logger.debug(f"扫描 RAW 文件夹: {raw_folder_path}")
+            try:
+                for filename in os.listdir(raw_folder_path):
+                    name, ext = os.path.splitext(filename)
+                    if ext.lower() in raw_extensions:
+                        raw_files[name.lower()] = os.path.join(raw_folder_path, filename)
+            except OSError as e:
+                logger.error(f"扫描 RAW 文件夹时发生错误: {raw_folder_path}, 错误: {e}", exc_info=True)
+                raise ImageSelectorError(f"无法读取 RAW 文件夹内容: {raw_folder_path}") from e
 
         image_pairs = []
-        common_bases_lower = set(jpg_files.keys()).intersection(set(raw_files.keys()))
+        if is_viewer_mode:
+            # 看图模式：只加载 JPG 文件
+            logger.info(f"处于看图模式，只加载 JPG 文件: {jpg_folder_path}")
+            sorted_jpg_bases = sorted(list(jpg_files.keys()))
+            for base_name_lower in sorted_jpg_bases:
+                jpg_path = jpg_files.get(base_name_lower)
+                if jpg_path:
+                    original_base_name_jpg = os.path.splitext(os.path.basename(jpg_path))[0]
+                    image_pairs.append({
+                        "base_name": original_base_name_jpg,
+                        "jpg_path": jpg_path,
+                        "raw_path": None, # RAW 路径为空
+                    })
+        else:
+            # 正常模式：查找 JPG 和 RAW 对
+            common_bases_lower = set(jpg_files.keys()).intersection(set(raw_files.keys()))
+            logger.debug(f"找到的共有图片基名（忽略大小写）数量: {len(common_bases_lower)}")
+            sorted_common_bases_lower = sorted(list(common_bases_lower))
 
-        logger.debug(f"找到的共有图片基名（忽略大小写）数量: {len(common_bases_lower)}")
+            for base_name_lower in sorted_common_bases_lower:
+                jpg_path = jpg_files.get(base_name_lower)
+                raw_path = raw_files.get(base_name_lower)
 
-        sorted_common_bases_lower = sorted(list(common_bases_lower))
-
-        for base_name_lower in sorted_common_bases_lower:
-           jpg_path = jpg_files.get(base_name_lower)
-           raw_path = raw_files.get(base_name_lower)
-
-           if jpg_path and raw_path:
-                original_base_name_jpg = os.path.splitext(os.path.basename(jpg_path))[0]
-                image_pairs.append({
-                   "base_name": original_base_name_jpg,
-                   "jpg_path": jpg_path,
-                   "raw_path": raw_path,
-               })
-           else:
-                logger.warning(f"找到匹配的低层级基名 '{base_name_lower}' 但无法在字典中找到原始文件路径。逻辑错误或异常文件。跳过。")
+                if jpg_path and raw_path:
+                    original_base_name_jpg = os.path.splitext(os.path.basename(jpg_path))[0]
+                    image_pairs.append({
+                        "base_name": original_base_name_jpg,
+                        "jpg_path": jpg_path,
+                        "raw_path": raw_path,
+                    })
+                else:
+                    logger.warning(f"找到匹配的低层级基名 '{base_name_lower}' 但无法在字典中找到原始文件路径。逻辑错误或异常文件。跳过。")
 
         if not image_pairs:
-            logger.warning(f"在文件夹 '{jpg_folder_path}' 和 '{raw_folder_path}' 中没有找到匹配的图片对。")
-            raise NoImagePairsFoundError("在指定的文件夹中没有找到匹配的图片对。")
+            if is_viewer_mode:
+                logger.warning(f"在文件夹 '{jpg_folder_path}' 中没有找到 JPG 图片。")
+                raise NoImagePairsFoundError("在指定的 JPG 文件夹中没有找到图片。")
+            else:
+                logger.warning(f"在文件夹 '{jpg_folder_path}' 和 '{raw_folder_path}' 中没有找到匹配的图片对。")
+                raise NoImagePairsFoundError("在指定的文件夹中没有找到匹配的图片对。")
 
         logger.info(f"图片对查找完成，找到 {len(image_pairs)} 对。")
         return image_pairs
@@ -221,21 +241,29 @@ class FileManager:
 
             img_thumb = padded_img
 
+            # 如果是 RGBA 模式，转换为 RGB，因为 JPEG 不支持 Alpha 通道
+            if img_thumb.mode == 'RGBA':
+                img_thumb = img_thumb.convert('RGB')
+
             if cache_path:
                 try:
-                    img_thumb.save(cache_path, "PNG")
+                    img_thumb.save(cache_path, "JPEG") # 将缓存格式改为 JPEG
                 except Exception as e:
                     logger.error(f"保存缩略图到缓存失败: {cache_path}: {e}")
                     print(f"--- Error saving thumbnail cache {cache_path}: {e} ---", file=sys.stderr, flush=True)
 
-            logger.debug(f"生成带填充的缩略图成功: {file_path}")
-            return img_thumb
+            img_byte_stream = io.BytesIO()
+            img_thumb.save(img_byte_stream, format='JPEG')
+            img_byte_stream.seek(0)
+
+            logger.debug(f"生成带填充的缩略图成功并转换为字节流: {file_path}")
+            return img_byte_stream
 
         except Exception as e:
-            logger.error(f"生成缩略图: '{file_path}' 时发生未预料错误 (处理阶段): {e}")
+            logger.error(f"生成缩略图: '{file_path}' 时发生未预料错误 (处理阶段): {e}", exc_info=True)
             print(f"--- Unexpected Error during thumbnail processing {file_path}: {e} ---", file=sys.stderr,
                   flush=True)
-            return None
+            raise ImageProcessingError(f"生成缩略图失败: {os.path.basename(file_path)}") from e
 
     def get_image_metadata(self, file_path):
         logger.info(f"尝试获取图片元数据 for: {os.path.basename(file_path)}")

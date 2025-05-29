@@ -219,11 +219,11 @@ export function updateNavigationButtons() {
 
     elements.prevImageButton.disabled = !canGoPrev;
     elements.nextImageButton.disabled = !canGoNext;
-    elements.openRawButton.disabled = !canOpenRaw;
+    // elements.openRawButton.disabled = !canOpenRaw; // 此行将由 setOpenRawButtonState 控制
 
     const jpgPathSet = elements.jpgFolderPathInput && elements.jpgFolderPathInput.value.length > 0;
     const rawPathSet = elements.rawFolderPathInput && elements.rawFolderPathInput.value.length > 0;
-    elements.loadImagesButton.disabled = !(jpgPathSet && rawPathSet) || isLoading;
+    elements.loadImagesButton.disabled = !(jpgPathSet || rawPathSet) || isLoading; // 允许只加载JPG
 }
 
 /**
@@ -247,6 +247,18 @@ export function highlightSelectedThumbnail() {
             selectedItem.classList.add('selected');
             selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+    }
+}
+
+/**
+ * Sets the disabled state of the 'Open RAW' button.
+ * @param {boolean} enable If true, the button is enabled; otherwise, it's disabled.
+ */
+export function setOpenRawButtonState(enable) {
+    if (elements.openRawButton) {
+        elements.openRawButton.disabled = !enable;
+    } else {
+        console.warn('UI: 无法设置打开 RAW 按钮状态，elements.openRawButton 为 null.');
     }
 }
 

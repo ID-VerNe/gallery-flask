@@ -134,6 +134,8 @@ def load_folders():
         logger.debug(f"接收到的加载请求参数: JPG='{jpg_folder}', RAW='{raw_folder}'")
 
         load_result = app_state.load_folders(jpg_folder, raw_folder)
+        is_viewer_mode = not bool(raw_folder) # 如果 raw_folder 为空，则为看图模式
+        load_result['is_viewer_mode'] = is_viewer_mode
 
         logger.info("/api/load_folders 处理成功。")
         return jsonify(load_result), 200

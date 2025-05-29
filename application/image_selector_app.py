@@ -20,9 +20,9 @@ class ImageSelectorApp:
     def load_folders(self, jpg_folder_path, raw_folder_path):
         logger.info(f"应用层尝试加载文件夹: JPG='{jpg_folder_path}', RAW='{raw_folder_path}'")
 
-        if not jpg_folder_path or not raw_folder_path:
-             logger.warning("尝试加载文件夹，但其中一个或两个路径为空。")
-             raise FolderNotFoundError("JPG 和 RAW 文件夹路径不能为空。")
+        if not jpg_folder_path:
+             logger.warning("尝试加载文件夹，但 JPG 路径为空。")
+             raise FolderNotFoundError("JPG 文件夹路径不能为空。")
 
         try:
             found_pairs = file_manager.find_image_pairs(jpg_folder_path, raw_folder_path)
@@ -37,8 +37,9 @@ class ImageSelectorApp:
             self._jpg_folder = jpg_folder_path
             self._raw_folder = raw_folder_path
             self._is_loaded = len(self._image_pairs) > 0
+            self._is_viewer_mode = not bool(raw_folder_path) # 根据 raw_folder_path 是否为空设置看图模式
 
-            logger.info(f"应用层加载文件夹成功，找到 {len(self._image_pairs)} 对图片。当前索引设置为 {self._current_index}。")
+            logger.info(f"应用层加载文件夹成功，找到 {len(self._image_pairs)} 对图片。当前索引设置为 {self._current_index}。看图模式: {self._is_viewer_mode}")
 
             frontend_pairs_info = []
             for i, pair in enumerate(self._image_pairs):
@@ -49,6 +50,7 @@ class ImageSelectorApp:
 
             status = self.get_current_status()
             status["image_pairs_info"] = frontend_pairs_info
+            status["is_viewer_mode"] = self._is_viewer_mode # 将看图模式状态添加到返回状态中
 
             return status
 
@@ -92,7 +94,8 @@ class ImageSelectorApp:
             "jpg_folder": self._jpg_folder,
             "raw_folder": self._raw_folder,
             "is_loaded": self._is_loaded,
-            "current_image_metadata": metadata # 添加元数据到状态中
+            "current_image_metadata": metadata, # 添加元数据到状态中
+            "is_viewer_mode": self._is_viewer_mode if hasattr(self, '_is_viewer_mode') else False # 添加看图模式状态
         }
         return status
 

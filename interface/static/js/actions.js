@@ -71,8 +71,9 @@ export async function loadFoldersAction() {
     const jpgPath = elements.jpgFolderPathInput.value.trim();
     const rawPath = elements.rawFolderPathInput.value.trim();
 
-    if (!jpgPath || !rawPath) {
-        ui.showErrorMessage('请指定 JPG 和 RAW 文件夹路径才能加载。', true);
+    // 如果 JPG 路径为空，则报错。如果 RAW 路径为空，则允许进入看图模式。
+    if (!jpgPath) {
+        ui.showErrorMessage('请指定 JPG 文件夹路径才能加载。', true);
         return;
     }
 
@@ -89,10 +90,12 @@ export async function loadFoldersAction() {
             appState.jpgFolder = response.jpg_folder;
             appState.rawFolder = response.raw_folder;
             appState.isLoaded = true;
-            appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
+            appState.current_image_metadata = response.current_image_metadata || {};
+            appState.isViewerMode = response.is_viewer_mode; // 添加此行
 
             ui.renderThumbnails(appState.imagePairsInfo);
             ui.updateUI();
+            ui.setOpenRawButtonState(!appState.isViewerMode); // 根据是否为看图模式设置按钮状态
 
             api.updatePaths(jpgPath, rawPath).catch(configError => {
                 console.error('Actions: 后台保存加载的路径到 .env 失败:', configError);

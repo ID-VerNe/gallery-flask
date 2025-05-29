@@ -8,5 +8,6 @@ export const appState = {
     rawFolder: '',
     isLoaded: false,
     isLoading: false,
-    current_image_metadata: {}, // 添加此行
+    current_image_metadata: {},
+    isViewerMode: false, // 添加此行
 };
