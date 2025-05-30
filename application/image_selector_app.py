@@ -27,13 +27,20 @@ class ImageSelectorApp:
         try:
             found_pairs = file_manager.find_image_pairs(jpg_folder_path, raw_folder_path)
 
-            # 获取并存储每张图片的元数据
-            for pair in found_pairs:
-                metadata = file_manager.get_image_metadata(pair['jpg_path'])
-                pair['metadata'] = metadata # 将元数据添加到图片对中
-
             self._image_pairs = found_pairs
             self._current_index = 0 if self._image_pairs else -1
+
+            # 仅在加载时获取第一张图片的元数据
+            if self._image_pairs:
+                first_image_path = self._image_pairs[0]['jpg_path']
+                metadata = file_manager.get_image_metadata(first_image_path)
+                self._image_pairs[0]['metadata'] = metadata
+            else:
+                # 如果没有图片，确保元数据为空
+                if self._current_index == -1:
+                    for pair in self._image_pairs: # 确保所有图片对的元数据都初始化为空
+                        pair['metadata'] = {}
+
             self._jpg_folder = jpg_folder_path
             self._raw_folder = raw_folder_path
             self._is_loaded = len(self._image_pairs) > 0
@@ -112,6 +119,13 @@ class ImageSelectorApp:
         self._current_index = index
         logger.info(f"应用层图片对索引成功切换为: {self._current_index}")
 
+        # 获取当前选中图片的元数据（如果尚未加载）
+        current_pair = self._image_pairs[self._current_index]
+        if 'metadata' not in current_pair or not current_pair['metadata']:
+            metadata = file_manager.get_image_metadata(current_pair['jpg_path'])
+            current_pair['metadata'] = metadata
+            logger.debug(f"按需加载了索引 {self._current_index} 的图片元数据。")
+
         return self.get_current_status()
 
     def next_image(self):
@@ -124,6 +138,12 @@ class ImageSelectorApp:
         if 0 <= self._current_index < len(self._image_pairs) - 1:
             self._current_index += 1
             logger.info(f"应用层下一张图片索引为: {self._current_index}")
+            # 获取当前选中图片的元数据（如果尚未加载）
+            current_pair = self._image_pairs[self._current_index]
+            if 'metadata' not in current_pair or not current_pair['metadata']:
+                metadata = file_manager.get_image_metadata(current_pair['jpg_path'])
+                current_pair['metadata'] = metadata
+                logger.debug(f"按需加载了索引 {self._current_index} 的图片元数据。")
         else:
             logger.warning("应用层已在最后一张图片，无法前往下一张。索引保持不变。")
 
@@ -139,6 +159,12 @@ class ImageSelectorApp:
         if self._current_index > 0:
             self._current_index -= 1
             logger.info(f"应用层上一张图片索引为: {self._current_index}")
+            # 获取当前选中图片的元数据（如果尚未加载）
+            current_pair = self._image_pairs[self._current_index]
+            if 'metadata' not in current_pair or not current_pair['metadata']:
+                metadata = file_manager.get_image_metadata(current_pair['jpg_path'])
+                current_pair['metadata'] = metadata
+                logger.debug(f"按需加载了索引 {self._current_index} 的图片元数据。")
         else:
             logger.warning("应用层已在第一张图片，无法返回上一张。索引保持不变。")
 

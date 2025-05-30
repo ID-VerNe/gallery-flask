@@ -14,6 +14,18 @@ export function initUI(elementsRef, appStateRef, apiRef) {
     elements = elementsRef;
     appState = appStateRef;
     api = apiRef;
+
+    // Add new state properties
+    appState.isSortedAscending = true;
+    appState.originalImagePairsInfo = []; // To store the initial loaded order
+
+    // Get reference to the new sort button
+    elements.toggleSortButton = document.getElementById('toggle-sort-button');
+    if (!elements.toggleSortButton) {
+        console.error('UI: 无法找到切换排序按钮，ID 为 toggle-sort-button.');
+    }
+    // Removed the event listener from here, it's handled in script.js
+
     updateUI();
 }
 
@@ -75,27 +87,43 @@ export function updateInfoLabel() {
 
 /**
  * Renders the thumbnail list based on the loaded image pairs info.
- * This should ideally be called once after a successful load.
- * @param {Array<object>} imagePairsInfo The list of image pair info from state.imagePairsInfo.
+ * This should ideally be called once after a successful load, or after sorting.
  */
-export function renderThumbnails(imagePairsInfo) {
+export function renderThumbnails() {
     if (!elements.thumbnailList) {
         console.error('UI: 无法渲染缩略图，elements.thumbnailList 为 null.');
         return;
     }
 
+    // Save current scroll position
+    const scrollTop = elements.thumbnailList.scrollTop;
+
     elements.thumbnailList.innerHTML = '';
+
+    const imagePairsInfo = appState.originalImagePairsInfo; // Use the stored original data
 
     if (!imagePairsInfo || imagePairsInfo.length === 0) {
         return;
     }
 
+    // Sort the image pairs based on the current sort state
+    const sortedImagePairs = [...imagePairsInfo].sort((a, b) => {
+        if (appState.isSortedAscending) {
+            return a.index - b.index; // Sort by original index ascending
+        } else {
+            return b.index - a.index; // Sort by original index descending
+        }
+    });
+
+    console.log('renderThumbnails: isSortedAscending', appState.isSortedAscending); // Log sort state
+    console.log('renderThumbnails: sortedImagePairs', sortedImagePairs); // Log sorted array
+
     const fragment = document.createDocumentFragment();
-    imagePairsInfo.forEach(pair => {
-        const index = pair.index;
+    sortedImagePairs.forEach(pair => { // Iterate over the sorted array
+        const index = pair.index; // Use the original index for data-index and URL
         const thumbnailItem = document.createElement('div');
         thumbnailItem.classList.add('thumbnail-item');
-        thumbnailItem.dataset.index = index;
+        thumbnailItem.dataset.index = index; // Store original index
 
         const img = new Image();
         img.classList.add('thumbnail-image');
@@ -104,12 +132,12 @@ export function renderThumbnails(imagePairsInfo) {
 
         const indexLabel = document.createElement('span');
         indexLabel.classList.add('thumbnail-index');
-        indexLabel.textContent = `${index + 1}`;
+        indexLabel.textContent = `${index + 1}`; // Display original index + 1
 
         thumbnailItem.appendChild(img);
         thumbnailItem.appendChild(indexLabel);
 
-        img.src = api.getThumbnailUrl(index);
+        img.src = api.getThumbnailUrl(index); // Use original index for URL
 
         img.onerror = () => {
             console.error(`UI: 加载缩略图失败 for index ${index}. URL: ${img.src}`);
@@ -126,7 +154,10 @@ export function renderThumbnails(imagePairsInfo) {
 
     elements.thumbnailList.appendChild(fragment);
 
-    highlightSelectedThumbnail();
+    // Restore scroll position
+    elements.thumbnailList.scrollTop = scrollTop;
+
+    highlightSelectedThumbnail(); // Highlight the currently selected image based on its original index
 }
 
 /**

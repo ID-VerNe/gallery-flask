@@ -49,6 +49,42 @@ export function resetPanning() {
 }
 
 /**
+ * Zooms in at a specific point relative to the container.
+ * @param {number} clickX The X coordinate of the click relative to the container's top-left.
+ * @param {number} clickY The Y coordinate of the click relative to the container's top-left.
+ */
+export function zoomInAt(clickX, clickY) {
+    if (!imageElement || !containerElement) {
+        console.warn('Panning: 无法放大，缺少图片或容器元素。');
+        return;
+    }
+
+    const containerRect = containerElement.getBoundingClientRect();
+    const containerCenterX = containerRect.width / 2;
+    const containerCenterY = containerRect.height / 2;
+
+    // Calculate click point relative to the container's center
+    const clickPointRelativeToContainerCenter = {
+        x: clickX - containerCenterX,
+        y: clickY - containerCenterY
+    };
+
+    const oldScale = panState.currentScale;
+    const newScale = oldScale + 0.5; // Zoom in by 0.5x
+
+    // Calculate the new pan position to keep the clicked point under the cursor
+    // newImageX = cx - (cx - imageX) * (newScale / oldScale)
+    // newImageY = cy - (cy - imageY) * (newScale / oldScale)
+    panState.imageX = clickPointRelativeToContainerCenter.x - (clickPointRelativeToContainerCenter.x - panState.imageX) * (newScale / oldScale);
+    panState.imageY = clickPointRelativeToContainerCenter.y - (clickPointRelativeToContainerCenter.y - panState.imageY) * (newScale / oldScale);
+
+    panState.currentScale = newScale;
+
+    applyTransform();
+}
+
+
+/**
  * Applies the current scale, translation transform to the image element.
  */
 function applyTransform() {

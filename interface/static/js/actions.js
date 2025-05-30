@@ -93,7 +93,10 @@ export async function loadFoldersAction() {
             appState.current_image_metadata = response.current_image_metadata || {};
             appState.isViewerMode = response.is_viewer_mode; // 添加此行
 
-            ui.renderThumbnails(appState.imagePairsInfo);
+            // Store the original image pairs info
+            appState.originalImagePairsInfo = [...appState.imagePairsInfo];
+
+            ui.renderThumbnails(); // Call renderThumbnails without arguments
             ui.updateUI();
             ui.setOpenRawButtonState(!appState.isViewerMode); // 根据是否为看图模式设置按钮状态
 
