@@ -28,7 +28,9 @@ app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 @app.route('/')
 def index():
     logger.info("Serving index.html...")
-    return render_template('index.html')
+    default_jpg_folder = app_config.get('DEFAULT_JPG_FOLDER', '')
+    default_raw_folder = app_config.get('DEFAULT_RAW_FOLDER', '')
+    return render_template('index.html', default_jpg_folder=default_jpg_folder, default_raw_folder=default_raw_folder)
 
 
 @app.route('/api/select_folder', methods=['GET'])

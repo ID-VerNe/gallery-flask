@@ -34,12 +34,35 @@ body {
     min-width: 80px; /* Ensure labels align */
 }
 
+.input-with-clear {
+    position: relative; /* Needed for positioning the clear button */
+    flex-grow: 1; /* Allow container to fill available space */
+    min-width: 500px; /* Minimum width for container */
+}
+
 .folder-path-input {
-    flex-grow: 1; /* Allow input to fill available space */
-    min-width: 500px; /* Minimum width for input */
+    width: 100%; /* Make input fill its container */
     padding: 5px;
+    padding-right: 25px; /* Make space for the clear button */
     border: 1px solid #ccc;
     border-radius: 4px;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.clear-input {
+    position: absolute;
+    right: 8px; /* Position from the right edge of the input */
+    top: 50%;
+    transform: translateY(-50%); /* Vertically center the button */
+    cursor: pointer;
+    color: #888; /* Grey color for the 'x' */
+    font-weight: bold;
+    font-size: 1.2em;
+    display: none; /* Initially hidden */
+}
+
+.clear-input:hover {
+    color: #555; /* Darker color on hover */
 }
 
 .top-controls button {

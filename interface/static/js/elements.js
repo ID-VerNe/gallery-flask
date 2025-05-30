@@ -10,6 +10,8 @@ export function initElements() {
         elements.rawFolderPathInput = document.getElementById('raw-folder-path');
         elements.browseJpgButton = document.getElementById('browse-jpg-button');
         elements.browseRawButton = document.getElementById('browse-raw-button');
+        elements.clearJpgPath = document.getElementById('clear-jpg-path');
+        elements.clearRawPath = document.getElementById('clear-raw-path');
         elements.browseJpgHidden = document.getElementById('browse-jpg-hidden');
         elements.browseRawHidden = document.getElementById('browse-raw-hidden');
         elements.loadImagesButton = document.getElementById('load-images-button');

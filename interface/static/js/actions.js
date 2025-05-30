@@ -301,19 +301,18 @@ export async function initialLoadAction() {
             appState.isLoaded = statusResponse.is_loaded;
             appState.current_image_metadata = statusResponse.current_image_metadata || {}; // 添加此行
 
-            const elements = ui.getElements();
-            if (elements.jpgFolderPathInput) elements.jpgFolderPathInput.value = appState.jpgFolder;
-            if (elements.rawFolderPathInput) elements.rawFolderPathInput.value = appState.rawFolder;
+            // Removed lines that were overwriting input field values
 
             ui.updateInfoLabel();
             ui.updateNavigationButtons();
 
-            if (appState.jpgFolder && appState.rawFolder) {
-                await loadFoldersAction();
-            } else {
-                ui.hideLoading();
-                ui.updateNavigationButtons();
-            }
+            // Check input field values directly for initial load
+            const elements = ui.getElements();
+            // Check input field values directly for initial load
+            // Removed automatic loadFoldersAction call
+
+            ui.hideLoading(); // Hide loading spinner after getting status
+            ui.updateNavigationButtons(); // Update button states based on initial state
 
         } else {
             const message = statusResponse && statusResponse.message ? `后端错误: ${statusResponse.message}` : '获取初始状态时发生未知错误。';

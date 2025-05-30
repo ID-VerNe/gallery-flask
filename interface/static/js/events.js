@@ -20,21 +20,59 @@ const debouncedUpdatePaths = debounce(function() {
 }, 1000);
 
 /**
+ * Initializes event handlers for the clear buttons.
+ */
+function initClearButtonHandlers() {
+    if (elements.jpgFolderPathInput && elements.clearJpgPath) {
+        // Initial check for visibility on load
+        elements.clearJpgPath.style.display = elements.jpgFolderPathInput.value ? 'block' : 'none';
+
+        elements.jpgFolderPathInput.addEventListener('input', () => {
+            elements.clearJpgPath.style.display = elements.jpgFolderPathInput.value ? 'block' : 'none';
+        });
+
+        elements.clearJpgPath.addEventListener('click', () => {
+            elements.jpgFolderPathInput.value = '';
+            // Trigger input event to hide the clear button and potentially trigger debouncedUpdatePaths
+            elements.jpgFolderPathInput.dispatchEvent(new Event('input'));
+        });
+    }
+
+    if (elements.rawFolderPathInput && elements.clearRawPath) {
+         // Initial check for visibility on load
+        elements.clearRawPath.style.display = elements.rawFolderPathInput.value ? 'block' : 'none';
+
+        elements.rawFolderPathInput.addEventListener('input', () => {
+            elements.clearRawPath.style.display = elements.rawFolderPathInput.value ? 'block' : 'none';
+        });
+
+        elements.clearRawPath.addEventListener('click', () => {
+            elements.rawFolderPathInput.value = '';
+             // Trigger input event to hide the clear button and potentially trigger debouncedUpdatePaths
+            elements.rawFolderPathInput.dispatchEvent(new Event('input'));
+        });
+    }
+}
+
+
+/**
  * Initializes all necessary event listeners on DOM elements.
  * Must be called after initElements(), initActions(), and initPanning().
  * @param {object} elementsRef The object holding DOM element references.
  * @param {object} actionsRef The actions module object.
- * @param {object} panningRef The panning module object. // Add panningRef parameter
+ * @param {object} panningRef The panning module object.
  */
-export function initEventHandlers(elementsRef, actionsRef, panningRef) { // Accept panningRef
+export function initEventHandlers(elementsRef, actionsRef, panningRef) {
     elements = elementsRef;
     actions = actionsRef;
-    panning = panningRef; // Store panning reference
+    panning = panningRef;
 
-    if (!elements || !actions || !panning) { // Check for panning reference
+    if (!elements || !actions || !panning) {
         console.error('模块 js/events.js: 无法初始化，缺少 elements, actions 或 panning 模块引用。');
         return;
     }
+
+    initClearButtonHandlers(); // Initialize clear button handlers
 
     try {
         if (elements.browseJpgButton) {

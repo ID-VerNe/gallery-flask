@@ -12,12 +12,18 @@
         <div class="top-controls">
             <div class="folder-input">
                 <label for="jpg-folder-path"> JPG 文件夹:</label>
-                <input type="text" id="jpg-folder-path" class="folder-path-input">
+                <div class="input-with-clear">
+                    <input type="text" id="jpg-folder-path" class="folder-path-input" value="{{ default_jpg_folder }}">
+                    <span class="clear-input" id="clear-jpg-path">&times;</span>
+                </div>
                 <button id="browse-jpg-button">浏览...</button>
             </div>
             <div class="folder-input">
                 <label for="raw-folder-path"> RAW 文件夹:</label>
-                <input type="text" id="raw-folder-path" class="folder-path-input">
+                <div class="input-with-clear">
+                    <input type="text" id="raw-folder-path" class="folder-path-input" value="{{ default_raw_folder }}">
+                    <span class="clear-input" id="clear-raw-path">&times;</span>
+                </div>
                 <button id="browse-raw-button">浏览...</button>
             </div>
             <button id="load-images-button">加载图片</button>
