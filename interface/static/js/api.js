@@ -56,11 +56,16 @@ export const api = {
     },
 
     /** Calls the backend to load image pairs from specified folders. */
-    async loadFolders(jpgPath, rawPath) {
+    async loadFolders(jpgPath, rawPath, initialIndex = null, sortOrder = null) {
         const options = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jpg_folder: jpgPath, raw_folder: rawPath })
+            body: JSON.stringify({
+                jpg_folder: jpgPath,
+                raw_folder: rawPath,
+                initial_index: initialIndex, // Include initial_index
+                sort_order: sortOrder // Include sort_order
+            })
         };
         return fetchJson('/load_folders', options);
     },
@@ -113,4 +118,25 @@ export const api = {
     getPreviewUrl(index) {
         return `${API_BASE_URL}/image/preview/${index}`;
     },
+
+    /** Calls the backend to load history for a specific JPG folder. */
+    async loadHistory(jpgFolder) {
+        let params = new URLSearchParams();
+        params.append('jpg_folder', jpgFolder);
+        return fetchJson(`/load_history?${params.toString()}`);
+    },
+
+    /** Calls the backend to save history for the current state. */
+    async saveHistory(jpgFolder, currentIndex, sortOrder) {
+        const options = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jpg_folder: jpgFolder,
+                current_index: currentIndex,
+                sort_order: sortOrder
+            })
+        };
+        return fetchJson('/save_history', options);
+    }
 };

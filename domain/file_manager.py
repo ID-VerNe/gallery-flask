@@ -50,7 +50,7 @@ class FileManager:
             logger.error(f"RAW 文件夹不存在或不是目录: {raw_folder_path}")
             raise FolderNotFoundError(f"RAW 文件夹不存在或不是目录: {raw_folder_path}")
 
-        jpg_extensions = ('.jpg', '.jpeg')
+        jpg_extensions = ('.jpg', '.jpeg', '.png')
         raw_extensions = ('.cr2', '.nef', '.arw', '.dng', '.orf', '.rw2', '.3fr', '.ari', '.bmq', '.cap', '.cin', '.cxr', '.drf', '.dcs', '.dcr', '.dqf', '.efw', '.erf', '.fff', '.iiq', '.jpeg', '.j6f', '.kdc', '.mos', '.mrf', '.nrw', '.pef', '.pxn', '.qtk', '.raf', '.raw', '.rdc', '.sr2', '.srf', '.srw', '.x3f')
 
         jpg_files = {}
@@ -109,6 +109,14 @@ class FileManager:
                     })
                 else:
                     logger.warning(f"找到匹配的低层级基名 '{base_name_lower}' 但无法在字典中找到原始文件路径。逻辑错误或异常文件。跳过。")
+
+        # Sort image pairs by modification time and then by filename
+        try:
+            image_pairs.sort(key=lambda pair: (os.path.getmtime(pair['jpg_path']), os.path.basename(pair['jpg_path'])))
+            logger.debug("图片对已按修改时间和文件名排序。")
+        except Exception as e:
+            logger.error(f"排序图片对时发生错误: {e}", exc_info=True)
+            # Continue without sorting if an error occurs
 
         if not image_pairs:
             if is_viewer_mode:

@@ -27,31 +27,10 @@ function mainInit() {
 
         actionsModule.initActions(api, uiModule, appState, FRONTEND_CONFIG);
 
-        // Add event listener for the toggle sort button
-        if (elements.toggleSortButton) {
-            elements.toggleSortButton.addEventListener('click', async () => {
-                appState.isSortedAscending = !appState.isSortedAscending; // Toggle sort state
-                console.log('Sort order toggled. isSortedAscending:', appState.isSortedAscending); // Log the new state
-                uiModule.renderThumbnails(); // Re-render with new sort order
+        // Removed the event listener for the toggle sort button from here.
+        // It is now handled in events.js, calling actionsModule.toggleSortDirectionAction().
 
-                // Determine the index of the first image in the new sorted order
-                const sortedImagePairs = [...appState.originalImagePairsInfo].sort((a, b) => {
-                    if (appState.isSortedAscending) {
-                        return a.index - b.index; // Sort by original index ascending
-                    } else {
-                        return b.index - a.index; // Sort by original index descending
-                    }
-                });
-
-                if (sortedImagePairs.length > 0) {
-                    const firstImageIndex = sortedImagePairs[0].index;
-                    await actionsModule.selectImageAction(firstImageIndex); // Select the first image in the new order
-                }
-            });
-        }
-
-
-        eventsModule.initEventHandlers(elements, actionsModule, panningModule, { debouncedUpdatePaths: debounce });
+        eventsModule.initEventHandlers(elements, actionsModule, panningModule); // Removed debounce from here, it's handled internally by events.js
 
         panningModule.initPanning(elements.previewImage, elements.imageContainer);
 

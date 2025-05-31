@@ -16,37 +16,57 @@ class ImageSelectorApp:
         self._jpg_folder = ""
         self._raw_folder = ""
         self._is_loaded = False
+        self._sort_order = "time_filename" # Default sort order
 
-    def load_folders(self, jpg_folder_path, raw_folder_path):
-        logger.info(f"应用层尝试加载文件夹: JPG='{jpg_folder_path}', RAW='{raw_folder_path}'")
+    def load_folders(self, jpg_folder_path, raw_folder_path, initial_index=None, sort_order=None):
+        logger.info(f"应用层尝试加载文件夹: JPG='{jpg_folder_path}', RAW='{raw_folder_path}', Initial Index={initial_index}, Sort Order={sort_order}")
 
         if not jpg_folder_path:
              logger.warning("尝试加载文件夹，但 JPG 路径为空。")
              raise FolderNotFoundError("JPG 文件夹路径不能为空。")
 
         try:
+            # file_manager.find_image_pairs 已经在 domain 层实现了按时间+文件名排序
+            # 如果未来需要其他排序方式，可以在这里根据 sort_order 参数调用不同的排序逻辑
             found_pairs = file_manager.find_image_pairs(jpg_folder_path, raw_folder_path)
 
             self._image_pairs = found_pairs
-            self._current_index = 0 if self._image_pairs else -1
 
-            # 仅在加载时获取第一张图片的元数据
-            if self._image_pairs:
-                first_image_path = self._image_pairs[0]['jpg_path']
-                metadata = file_manager.get_image_metadata(first_image_path)
-                self._image_pairs[0]['metadata'] = metadata
+            # Set sort order
+            self._sort_order = sort_order if sort_order is not None else "time_filename" # Use provided sort_order or default
+
+            # Set initial index
+            if initial_index is not None and 0 <= initial_index < len(self._image_pairs):
+                self._current_index = initial_index
+                logger.info(f"应用层根据历史记录设置初始索引为: {self._current_index}")
+            else:
+                self._current_index = 0 if self._image_pairs else -1
+                if initial_index is not None: # Log if initial_index was provided but invalid
+                     logger.warning(f"提供的初始索引 {initial_index} 无效，设置为默认索引 {self._current_index}。")
+                else:
+                     logger.info(f"未提供初始索引，设置为默认索引 {self._current_index}。")
+
+
+            # 仅在加载时获取当前选中图片的元数据
+            if self._image_pairs and self._current_index != -1:
+                current_image_path = self._image_pairs[self._current_index]['jpg_path']
+                metadata = file_manager.get_image_metadata(current_image_path)
+                self._image_pairs[self._current_index]['metadata'] = metadata
+                logger.debug(f"加载时获取了索引 {self._current_index} 的图片元数据。")
+            elif self._image_pairs: # If there are images but index is -1 (shouldn't happen with current logic but for safety)
+                 # Ensure metadata is initialized for all pairs if no initial index is set
+                 for pair in self._image_pairs:
+                      pair['metadata'] = {}
             else:
                 # 如果没有图片，确保元数据为空
-                if self._current_index == -1:
-                    for pair in self._image_pairs: # 确保所有图片对的元数据都初始化为空
-                        pair['metadata'] = {}
+                pass # No images, no metadata to initialize
 
             self._jpg_folder = jpg_folder_path
             self._raw_folder = raw_folder_path
             self._is_loaded = len(self._image_pairs) > 0
             self._is_viewer_mode = not bool(raw_folder_path) # 根据 raw_folder_path 是否为空设置看图模式
 
-            logger.info(f"应用层加载文件夹成功，找到 {len(self._image_pairs)} 对图片。当前索引设置为 {self._current_index}。看图模式: {self._is_viewer_mode}")
+            logger.info(f"应用层加载文件夹成功，找到 {len(self._image_pairs)} 对图片。当前索引设置为 {self._current_index}。看图模式: {self._is_viewer_mode}。排序方式: {self._sort_order}")
 
             frontend_pairs_info = []
             for i, pair in enumerate(self._image_pairs):
@@ -58,6 +78,7 @@ class ImageSelectorApp:
             status = self.get_current_status()
             status["image_pairs_info"] = frontend_pairs_info
             status["is_viewer_mode"] = self._is_viewer_mode # 将看图模式状态添加到返回状态中
+            status["sort_order"] = self._sort_order # 添加排序方式到返回状态中
 
             return status
 
@@ -102,7 +123,8 @@ class ImageSelectorApp:
             "raw_folder": self._raw_folder,
             "is_loaded": self._is_loaded,
             "current_image_metadata": metadata, # 添加元数据到状态中
-            "is_viewer_mode": self._is_viewer_mode if hasattr(self, '_is_viewer_mode') else False # 添加看图模式状态
+            "is_viewer_mode": self._is_viewer_mode if hasattr(self, '_is_viewer_mode') else False, # 添加看图模式状态
+            "sort_order": self._sort_order if hasattr(self, '_sort_order') else "time_filename" # 添加排序方式到状态中
         }
         return status
 

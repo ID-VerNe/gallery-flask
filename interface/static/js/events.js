@@ -97,9 +97,9 @@ export function initEventHandlers(elementsRef, actionsRef, panningRef) {
             elements.thumbnailList.addEventListener('click', (event) => {
                 const thumbnailItem = event.target.closest('.thumbnail-item');
                 if (thumbnailItem && !thumbnailItem.classList.contains('error')) {
-                    const index = parseInt(thumbnailItem.dataset.index, 10);
-                    if (!isNaN(index)) {
-                        actions.selectImageAction(index);
+                    const displayIndex = parseInt(thumbnailItem.dataset.displayIndex, 10); // Get display index
+                    if (!isNaN(displayIndex)) {
+                        actions.selectImageAction(displayIndex); // Pass display index to action
                     }
                 }
             });
@@ -114,6 +114,10 @@ export function initEventHandlers(elementsRef, actionsRef, panningRef) {
 
         if (elements.openRawButton) {
             elements.openRawButton.addEventListener('click', () => actions.openRawAction());
+        }
+
+        if (elements.toggleSortButton) { // Add event listener for the new sort button
+            elements.toggleSortButton.addEventListener('click', () => actions.toggleSortDirectionAction());
         }
 
         // Add custom click/double-click and drag handling for the image container

@@ -13,6 +13,7 @@ from utils.exceptions import (
 
 import logging
 import os
+import json
 
 debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ('true', '1', 't')
 log_level = logging.DEBUG if debug_mode else logging.INFO
@@ -24,6 +25,36 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 static_dir = os.path.join(os.path.dirname(__file__), 'static')
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+
+# History file path (放在项目根目录)
+HISTORY_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'history.json')
+
+def _load_history():
+    """Loads history data from the JSON file."""
+    print(f"--- Attempting to load history from: {HISTORY_FILE_PATH} ---", file=sys.stderr, flush=True) # Use print for visibility
+    if not os.path.exists(HISTORY_FILE_PATH):
+        print(f"--- History file not found at: {HISTORY_FILE_PATH} ---", file=sys.stderr, flush=True) # Use print for visibility
+        return {}
+    try:
+        with open(HISTORY_FILE_PATH, 'r', encoding='utf-8') as f:
+            history_data = json.load(f)
+            print(f"--- Successfully loaded history from: {HISTORY_FILE_PATH} ---", file=sys.stderr, flush=True) # Use print for visibility
+            return history_data
+    except (json.JSONDecodeError, IOError) as e:
+        logger.error(f"加载历史记录文件失败: {HISTORY_FILE_PATH}, 错误: {e}", exc_info=True)
+        print(f"--- Failed to load history from {HISTORY_FILE_PATH}: {e} ---", file=sys.stderr, flush=True) # Use print for visibility
+        return {}
+
+def _save_history(history_data):
+    """Saves history data to the JSON file."""
+    print(f"--- Attempting to save history to: {HISTORY_FILE_PATH} ---", file=sys.stderr, flush=True) # Use print for visibility
+    try:
+        with open(HISTORY_FILE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(history_data, f, indent=4, ensure_ascii=False)
+        print(f"--- Successfully saved history to: {HISTORY_FILE_PATH} ---", file=sys.stderr, flush=True) # Use print for visibility
+    except IOError as e:
+        logger.error(f"保存历史记录文件失败: {HISTORY_FILE_PATH}, 错误: {e}", exc_info=True)
+        print(f"--- Failed to save history to {HISTORY_FILE_PATH}: {e} ---", file=sys.stderr, flush=True) # Use print for visibility
 
 @app.route('/')
 def index():
@@ -135,7 +166,11 @@ def load_folders():
 
         logger.debug(f"接收到的加载请求参数: JPG='{jpg_folder}', RAW='{raw_folder}'")
 
-        load_result = app_state.load_folders(jpg_folder, raw_folder)
+        # load_folders 现在接受可选的 initial_index 和 sort_order
+        initial_index = data.get('initial_index')
+        sort_order = data.get('sort_order') # 接收前端传递的排序方式
+
+        load_result = app_state.load_folders(jpg_folder, raw_folder, initial_index=initial_index, sort_order=sort_order)
         is_viewer_mode = not bool(raw_folder) # 如果 raw_folder 为空，则为看图模式
         load_result['is_viewer_mode'] = is_viewer_mode
 
@@ -160,6 +195,56 @@ def get_status():
     except Exception as e:
          logger.error(f"/api/status 发生未捕获的意外错误: {e}", exc_info=True)
          return jsonify({"success": False, "message": "获取应用状态时发生未知错误。"}), 500
+
+@app.route('/api/load_history', methods=['GET'])
+def load_history():
+    logger.info("接收到 /api/load_history 请求。")
+    jpg_folder = request.args.get('jpg_folder')
+
+    if not jpg_folder:
+        logger.warning("/api/load_history 请求缺少 jpg_folder 参数。")
+        return jsonify({"success": False, "message": "缺少 jpg_folder 参数。"}), 400
+
+    history_data = _load_history()
+    folder_history = history_data.get(jpg_folder)
+
+    if folder_history:
+        logger.info(f"找到文件夹 '{jpg_folder}' 的历史记录。")
+        return jsonify({"success": True, "history": folder_history}), 200
+    else:
+        logger.info(f"未找到文件夹 '{jpg_folder}' 的历史记录。")
+        return jsonify({"success": False, "message": "未找到历史记录。"}), 404
+
+@app.route('/api/save_history', methods=['POST'])
+def save_history():
+    logger.info("接收到 /api/save_history 请求。")
+    try:
+        data = request.get_json()
+        if not data:
+            logger.warning("/api/save_history 请求体为空或不是有效的 JSON。")
+            return jsonify({"success": False, "message": "请求需要有效的 JSON 主体。"}), 400
+
+        jpg_folder = data.get('jpg_folder')
+        current_index = data.get('current_index')
+        sort_order = data.get('sort_order')
+
+        if not jpg_folder or current_index is None or sort_order is None:
+            logger.warning("/api/save_history 请求缺少必要参数。")
+            return jsonify({"success": False, "message": "缺少 jpg_folder, current_index 或 sort_order 参数。"}), 400
+
+        history_data = _load_history()
+        history_data[jpg_folder] = {
+            "last_index": current_index,
+            "sort_order": sort_order
+        }
+        _save_history(history_data)
+
+        logger.info(f"成功保存文件夹 '{jpg_folder}' 的历史记录。")
+        return jsonify({"success": True, "message": "历史记录已保存。"}), 200
+
+    except Exception as e:
+        logger.error(f"/api/save_history 发生未捕获的意外错误: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "保存历史记录时发生未知错误。"}), 500
 
 @app.route('/api/select_image/<int:index>', methods=['POST'])
 def select_image(index):

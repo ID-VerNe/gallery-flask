@@ -2,7 +2,7 @@ import { FRONTEND_CONFIG } from './config.js';
 
 let api;
 let ui;
-let appState;
+let appState; // Remove the initialization here
 let config;
 
 /**
@@ -62,6 +62,9 @@ export async function selectFolderAction(type) {
 export async function loadFoldersAction() {
     ui.clearErrorMessage();
 
+    // Reset sort direction on new folder load (This should be handled by appState.isSortedAscending default in state.js or initial load from history)
+    // appState.isSortedAscending = true; // Remove this line, it will be set by history or default in state.js
+
     const elements = ui.getElements();
     if (!elements.jpgFolderPathInput || !elements.rawFolderPathInput) {
         ui.showErrorMessage('应用程序错误: 无法获取文件夹输入框引用。');
@@ -80,8 +83,31 @@ export async function loadFoldersAction() {
     ui.showLoading();
     ui.updateNavigationButtons();
 
+    let initialIndex = null;
+    let sortOrder = null;
+
+    console.log('Actions: Attempting to load history...'); // Add this log
+    // 尝试加载历史记录
     try {
-        const response = await api.loadFolders(jpgPath, rawPath);
+        const historyResponse = await api.loadHistory(jpgPath);
+        console.log('Actions: loadHistory response:', historyResponse); // Add this log
+        if (historyResponse && historyResponse.success && historyResponse.history) {
+            initialIndex = historyResponse.history.last_index;
+            sortOrder = historyResponse.history.sort_order;
+            console.log(`Actions: 找到历史记录，初始索引: ${initialIndex}, 排序方式: ${sortOrder}`);
+        } else {
+            console.log('Actions: 未找到历史记录或加载失败，使用默认设置。');
+        }
+    } catch (error) {
+        console.error('Actions: 加载历史记录 API 调用失败:', error);
+        // 继续加载，但不使用历史记录
+    }
+
+    console.log('Actions: Proceeding to load folders...'); // Add this log
+
+    try {
+        // 调用后端 load_folders，传递历史记录中的索引和排序方式
+        const response = await api.loadFolders(jpgPath, rawPath, initialIndex, sortOrder);
 
         if (response && response.success) {
             appState.imagePairsInfo = response.image_pairs_info || [];
@@ -91,14 +117,31 @@ export async function loadFoldersAction() {
             appState.rawFolder = response.raw_folder;
             appState.isLoaded = true;
             appState.current_image_metadata = response.current_image_metadata || {};
-            appState.isViewerMode = response.is_viewer_mode; // 添加此行
+            appState.isViewerMode = response.is_viewer_mode;
+            appState.sortOrder = response.sort_order; // Store the sort order from backend
 
-            // Store the original image pairs info
-            appState.originalImagePairsInfo = [...appState.imagePairsInfo];
+            // Apply initial sort direction
+            if (sortOrder !== null && sortOrder !== undefined) {
+                appState.isSortedAscending = (sortOrder === 'asc'); // Set based on loaded history
+            } else {
+                appState.isSortedAscending = true; // Default to ascending if no history
+            }
 
-            ui.renderThumbnails(); // Call renderThumbnails without arguments
+            // Sort the image pairs based on the current sort direction
+            sortImagePairs(); // This will sort appState.imagePairsInfo directly
+
+            // Store the original image pairs info (This is no longer needed if imagePairsInfo is always sorted)
+            // appState.originalImagePairsInfo = [...appState.imagePairsInfo]; // Remove this line
+
+            ui.renderThumbnails();
             ui.updateUI();
-            ui.setOpenRawButtonState(!appState.isViewerMode); // 根据是否为看图模式设置按钮状态
+            ui.setOpenRawButtonState(!appState.isViewerMode);
+
+            // Save loaded history (current index and sort order)
+            if (appState.isLoaded) {
+                saveHistoryAction();
+            }
+
 
             api.updatePaths(jpgPath, rawPath).catch(configError => {
                 console.error('Actions: 后台保存加载的路径到 .env 失败:', configError);
@@ -110,6 +153,7 @@ export async function loadFoldersAction() {
             appState.currentIndex = -1;
             appState.totalImages = 0;
             appState.isLoaded = false;
+            appState.sortOrder = "time_filename"; // Reset sort order on failure
 
             ui.renderThumbnails([]);
             ui.updateUI();
@@ -122,6 +166,7 @@ export async function loadFoldersAction() {
         appState.currentIndex = -1;
         appState.totalImages = 0;
         appState.isLoaded = false;
+        appState.sortOrder = "time_filename"; // Reset sort order on failure
 
         ui.renderThumbnails([]);
         ui.updateUI();
@@ -133,33 +178,48 @@ export async function loadFoldersAction() {
 }
 
 /**
- * Handles the action of selecting a specific image by index.
- * @param {number} index The 0-based index to select.
+ * Handles the action of selecting a specific image by its display index.
+ * @param {number} displayIndex The 0-based display index from the currently sorted list.
  */
-export async function selectImageAction(index) {
+export async function selectImageAction(displayIndex) {
     ui.clearErrorMessage();
 
-    if (index < 0 || index >= appState.totalImages) {
-        ui.showErrorMessage(`无效的图片索引: ${index + 1}.`, true);
+    if (displayIndex < 0 || displayIndex >= appState.totalImages) {
+        ui.showErrorMessage(`无效的图片索引: ${displayIndex + 1}.`, true);
         return;
     }
+
+    // Get the original index from the imagePairsInfo array using the displayIndex
+    const originalIndex = appState.imagePairsInfo[displayIndex].index;
+    console.log(`Actions: 尝试选择显示索引 ${displayIndex} (原始索引 ${originalIndex})`);
 
     ui.updateNavigationButtons();
 
     try {
-        const response = await api.selectImage(index);
+        // Pass the original index to the backend API
+        const response = await api.selectImage(originalIndex);
 
         if (response && response.success) {
-            appState.currentIndex = response.current_index;
-            appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
+            // Backend returns the original index, but we need to find its new display index
+            // This is crucial for maintaining the correct highlight and preview after selection
+            const newDisplayIndex = appState.imagePairsInfo.findIndex(pair => pair.index === response.current_index);
+            if (newDisplayIndex !== -1) {
+                appState.currentIndex = newDisplayIndex; // Update appState.currentIndex with the display index
+            } else {
+                console.warn(`Actions: selectImageAction 无法在排序后的列表中找到原始索引 ${response.current_index} 对应的显示索引。`);
+                appState.currentIndex = 0; // Fallback
+            }
+
+            appState.current_image_metadata = response.current_image_metadata || {};
             ui.updateUI();
+            saveHistoryAction(); // Save history with the original index
         } else {
             const message = response && response.message ? `后端错误: ${response.message}` : '选择图片时发生未知错误。';
             ui.showErrorMessage(message, false);
         }
 
     } catch (error) {
-        console.error(`Actions: selectImage API 调用失败 for index ${index}:`, error);
+        console.error(`Actions: selectImage API 调用失败 for display index ${displayIndex} (original index ${originalIndex}):`, error);
         ui.showErrorMessage(`选择图片失败: ${error.message}`, false);
     } finally {
         ui.updateNavigationButtons();
@@ -187,6 +247,7 @@ export async function nextImageAction() {
             appState.currentIndex = response.current_index;
             appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
             ui.updateUI();
+            saveHistoryAction(); // 保存历史记录
         } else {
             const message = response && response.message ? `后端错误: ${response.message}` : '切换到下一张图片时发生未知错误。';
             ui.showErrorMessage(message, false);
@@ -221,6 +282,7 @@ export async function prevImageAction() {
             appState.currentIndex = response.current_index;
             appState.current_image_metadata = response.current_image_metadata || {}; // 添加此行
             ui.updateUI();
+            saveHistoryAction(); // 保存历史记录
         } else {
             const message = response && response.message ? `后端错误: ${response.message}` : '切换到上一张图片时发生未知错误。';
             ui.showErrorMessage(message, false);
@@ -299,7 +361,8 @@ export async function initialLoadAction() {
             appState.jpgFolder = statusResponse.jpg_folder;
             appState.rawFolder = statusResponse.raw_folder;
             appState.isLoaded = statusResponse.is_loaded;
-            appState.current_image_metadata = statusResponse.current_image_metadata || {}; // 添加此行
+            appState.current_image_metadata = statusResponse.current_image_metadata || {};
+            appState.sortOrder = statusResponse.sort_order; // Initialize sort order from status
 
             // Removed lines that were overwriting input field values
 
@@ -327,4 +390,83 @@ export async function initialLoadAction() {
         ui.hideLoading();
         ui.updateNavigationButtons();
     }
+}
+
+/**
+ * Saves the current folder, index, and sort order to history.
+ */
+async function saveHistoryAction() {
+    if (!appState.isLoaded || appState.currentIndex === -1 || !appState.jpgFolder) {
+        // Only save history if folders are loaded, an image is selected, and jpgFolder is set
+        return;
+    }
+
+    try {
+        const response = await api.saveHistory(appState.jpgFolder, appState.currentIndex, appState.isSortedAscending ? 'asc' : 'desc');
+        if (!response || !response.success) {
+            console.warn('Actions: 保存历史记录失败:', response ? response.message : '未知错误');
+        } else {
+            console.log('Actions: 历史记录已保存。');
+        }
+    } catch (error) {
+        console.error('Actions: 保存历史记录 API 调用失败:', error);
+    }
+}
+
+/**
+ * Toggles the sort direction of the image pairs.
+ */
+export function toggleSortDirectionAction() {
+    if (!appState.isLoaded || appState.imagePairsInfo.length === 0) {
+        console.warn('Actions: 无法切换排序，未加载图片或图片列表为空。');
+        return;
+    }
+
+    if (!appState.isLoaded || appState.imagePairsInfo.length === 0) {
+        console.warn('Actions: 无法切换排序，未加载图片或图片列表为空。');
+        return;
+    }
+
+    const currentOriginalIndex = appState.imagePairsInfo[appState.currentIndex].index; // Get the original index of the currently selected image
+    console.log(`Actions: 切换排序前，当前选中图片的原始索引: ${currentOriginalIndex}, 当前显示索引: ${appState.currentIndex}`);
+    console.log('Actions: 切换排序前 imagePairsInfo (部分):', appState.imagePairsInfo.slice(0, 5), '...', appState.imagePairsInfo.slice(-5));
+
+
+    appState.isSortedAscending = !appState.isSortedAscending; // Toggle sort state
+    sortImagePairs(); // Sort the array (modifies appState.imagePairsInfo in place)
+
+    // Find the new index of the previously selected image
+    const newCurrentIndex = appState.imagePairsInfo.findIndex(pair => pair.index === currentOriginalIndex);
+    console.log(`Actions: 切换排序后，当前选中图片的原始索引: ${currentOriginalIndex}, 在新列表中的新索引: ${newCurrentIndex}`);
+    console.log('Actions: 切换排序后 imagePairsInfo (部分):', appState.imagePairsInfo.slice(0, 5), '...', appState.imagePairsInfo.slice(-5));
+
+
+    if (newCurrentIndex !== -1) {
+        appState.currentIndex = newCurrentIndex; // Update current index to maintain selection
+    } else {
+        // Fallback if for some reason the image is not found (shouldn't happen)
+        appState.currentIndex = 0; // Reset to first image if original not found
+        console.warn('Actions: 切换排序后未能找到原选中图片，重置到第一张。');
+    }
+
+    console.log(`Actions: 在调用 ui.updateUI() 前，appState.currentIndex: ${appState.currentIndex}`);
+    ui.renderThumbnails(); // Re-render thumbnails after sorting
+    ui.updateUI(); // Update UI to reflect new current index and highlight
+    console.log(`Actions: 在调用 ui.updateUI() 后，appState.currentIndex: ${appState.currentIndex}`);
+    saveHistoryAction(); // Save the new sort order to history
+    console.log(`Actions: Toggled sort direction to ${appState.isSortedAscending ? 'ascending' : 'descending'}`);
+}
+
+/**
+ * Sorts the image pairs based on the current sort direction.
+ */
+function sortImagePairs() {
+    // The backend already sorts by time then filename.
+    // Here, we sort by the original index to achieve ascending/descending display.
+    if (appState.isSortedAscending) {
+        appState.imagePairsInfo.sort((a, b) => a.index - b.index); // Sort by original index ascending
+    } else {
+        appState.imagePairsInfo.sort((a, b) => b.index - a.index); // Sort by original index descending
+    }
+    console.log(`Actions: Image pairs sorted in ${appState.isSortedAscending ? 'ascending' : 'descending'} order.`);
 }

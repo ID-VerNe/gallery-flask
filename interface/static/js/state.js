@@ -9,5 +9,6 @@ export const appState = {
     isLoaded: false,
     isLoading: false,
     current_image_metadata: {},
-    isViewerMode: false, // 添加此行
+    isViewerMode: false,
+    isSortedAscending: true, // Add this line for default sort direction
 };
