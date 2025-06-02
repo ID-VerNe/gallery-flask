@@ -18,12 +18,12 @@ class FileManager:
         self._thumbnail_bounding_box_size = (150, 150)
         logger.info("FileManager initialized.")
         self._cache_dir_name = app_config.get("CACHE_DIR_NAME") or "app_cache"
+        # self._cache_dir_name = "app_cache"
         self._thumbnail_width = app_config.get("THUMBNAIL_WIDTH") or 150
         self._photoshop_path = app_config.get("PHOTOSHOP_PATH")
 
         this_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.join(this_dir, '..', '..')
-        self._cache_dir = os.path.join(project_root, self._cache_dir_name)
+        self._cache_dir = os.path.join(this_dir, '..', self._cache_dir_name)
 
         self._ensure_cache_dir_exists()
         logger.info(f"缩略图缓存目录设置为: {self._cache_dir}")

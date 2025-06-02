@@ -250,3 +250,47 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Overlay Navigation Buttons */
+.overlay-nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent black */
+    color: white;
+    border: none;
+    padding: 15px 10px;
+    font-size: 2em;
+    cursor: pointer;
+    z-index: 999; /* Above image, below spinner */
+    opacity: 0; /* Initially hidden */
+    transition: opacity 0.2s ease; /* Smooth fade in/out */
+    pointer-events: auto; /* Allow clicks to pass through when hidden */
+}
+
+.overlay-nav-button.prev-button {
+    left: 0;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.overlay-nav-button.next-button {
+    right: 0;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+/* Show buttons on hover over image-container */
+.image-container:hover .overlay-nav-button {
+    opacity: 1;
+}
+
+/* Hide buttons when mouse leaves the button itself, even if still on image-container */
+.overlay-nav-button:not(:hover) {
+    opacity: 0;
+}
+
+/* Ensure buttons are always visible when hovered directly */
+.overlay-nav-button:hover {
+    opacity: 1;
+}

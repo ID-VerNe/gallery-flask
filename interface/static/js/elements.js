@@ -23,7 +23,9 @@ export function initElements() {
         elements.prevImageButton = document.getElementById('prev-image-button');
         elements.nextImageButton = document.getElementById('next-image-button');
         elements.openRawButton = document.getElementById('open-raw-button');
-        elements.toggleSortButton = document.getElementById('toggle-sort-button'); // Add this line
+        elements.toggleSortButton = document.getElementById('toggle-sort-button');
+        elements.prevImageOverlayButton = document.getElementById('prev-image-overlay-button'); // Add this line
+        elements.nextImageOverlayButton = document.getElementById('next-image-overlay-button'); // Add this line
 
         elements.previewImage = new Image();
         elements.previewImage.id = 'preview-image';
@@ -31,7 +33,7 @@ export function initElements() {
         elements.previewImage.style.display = 'none';
         elements.imageContainer.appendChild(elements.previewImage);
 
-        if (!elements.jpgFolderPathInput || !elements.loadImagesButton || !elements.imageContainer || !elements.thumbnailList || !elements.infoLabel || !elements.prevImageButton || !elements.nextImageButton || !elements.openRawButton || !elements.previewImage || !elements.toggleSortButton) { // Add toggleSortButton to the check
+        if (!elements.jpgFolderPathInput || !elements.loadImagesButton || !elements.imageContainer || !elements.thumbnailList || !elements.infoLabel || !elements.prevImageButton || !elements.nextImageButton || !elements.openRawButton || !elements.previewImage || !elements.toggleSortButton || !elements.prevImageOverlayButton || !elements.nextImageOverlayButton) { // Add overlay buttons to the check
             console.error('模块 js/elements.js: 未找到一个或多个关键 DOM 元素！请检查 index.html.');
         }
     } catch (error) {

@@ -112,6 +112,19 @@ export function initEventHandlers(elementsRef, actionsRef, panningRef) {
             elements.nextImageButton.addEventListener('click', () => actions.nextImageAction());
         }
 
+        if (elements.prevImageOverlayButton) {
+            elements.prevImageOverlayButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent click from bubbling to image container
+                actions.prevImageAction();
+            });
+        }
+        if (elements.nextImageOverlayButton) {
+            elements.nextImageOverlayButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent click from bubbling to image container
+                actions.nextImageAction();
+            });
+        }
+
         if (elements.openRawButton) {
             elements.openRawButton.addEventListener('click', () => actions.openRawAction());
         }
@@ -141,6 +154,11 @@ export function initEventHandlers(elementsRef, actionsRef, panningRef) {
 
                 if (distance > DRAG_THRESHOLD) {
                     // It was a drag, do not trigger click/double-click logic
+                    return;
+                }
+
+                // If the click target is one of the overlay buttons, do not trigger image click logic
+                if (event.target === elements.prevImageOverlayButton || event.target === elements.nextImageOverlayButton) {
                     return;
                 }
 

@@ -230,7 +230,7 @@ export function updatePreviewImage() {
  */
 export function updateNavigationButtons() {
     const { currentIndex, totalImages, isLoaded, isLoading } = appState;
-    if (!elements.prevImageButton || !elements.nextImageButton || !elements.openRawButton || !elements.loadImagesButton) {
+    if (!elements.prevImageButton || !elements.nextImageButton || !elements.openRawButton || !elements.loadImagesButton || !elements.prevImageOverlayButton || !elements.nextImageOverlayButton) {
         console.error('UI: 无法更新导航按钮，elements 引用不完整.');
         return;
     }
@@ -242,6 +242,8 @@ export function updateNavigationButtons() {
 
     elements.prevImageButton.disabled = !canGoPrev;
     elements.nextImageButton.disabled = !canGoNext;
+    elements.prevImageOverlayButton.disabled = !canGoPrev; // Update overlay button
+    elements.nextImageOverlayButton.disabled = !canGoNext; // Update overlay button
     // elements.openRawButton.disabled = !canOpenRaw; // 此行将由 setOpenRawButtonState 控制
 
     const jpgPathSet = elements.jpgFolderPathInput && elements.jpgFolderPathInput.value.length > 0;
