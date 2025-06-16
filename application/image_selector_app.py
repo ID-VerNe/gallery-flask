@@ -70,10 +70,14 @@ class ImageSelectorApp:
 
             frontend_pairs_info = []
             for i, pair in enumerate(self._image_pairs):
-                 frontend_pairs_info.append({
+                is_modified = False
+                if pair['raw_path']:
+                    is_modified = file_manager.check_raw_modified_status(pair['raw_path'])
+                frontend_pairs_info.append({
                     "base_name": pair['base_name'],
                     "index": i,
-                 })
+                    "is_modified": is_modified, # 添加 is_modified 状态
+                })
 
             status = self.get_current_status()
             status["image_pairs_info"] = frontend_pairs_info

@@ -90,7 +90,7 @@ body {
 }
 
 .image-preview {
-    flex-grow: 6; /* Takes 6 parts of available space */
+    flex-grow: 7; /* Takes 6 parts of available space */
     display: flex; /* Use flex to center content */
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
@@ -149,7 +149,7 @@ body {
 }
 
 .thumbnail-list {
-    flex-grow: 2; /* Takes 1 part of available space */
+    flex-grow: 3; /* Takes 1 part of available space */
     background-color: #fff;
     overflow-y: auto; /* Enable vertical scrolling */
     overflow-x: hidden; /* Hide horizontal overflow */
@@ -198,6 +198,11 @@ body {
     text-align: center;
     width: 100%;
     height: 150px; /* Placeholder fixed height */
+}
+
+.thumbnail-filename.modified-raw {
+    color: red;
+    font-weight: bold;
 }
 
 .thumbnail-item.error .thumbnail-image {

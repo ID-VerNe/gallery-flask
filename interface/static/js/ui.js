@@ -124,6 +124,11 @@ export function renderThumbnails() {
         const baseName = pair.base_name; // Assuming pair.base_name already exists and is the filename without extension
         filenameLabel.textContent = baseName;
 
+        // Add 'modified-raw' class if the raw file has been modified
+        if (pair.is_modified) {
+            filenameLabel.classList.add('modified-raw');
+        }
+
         thumbnailItem.appendChild(img);
         thumbnailItem.appendChild(filenameLabel);
 

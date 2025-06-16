@@ -416,4 +416,21 @@ class FileManager:
              logger.error(f"打开文件时的顶层处理错误: {file_path}, 错误: {e}", exc_info=True)
              raise ImageSelectorError(f"处理打开文件请求时发生错误: {e}") from e
 
+    def check_raw_modified_status(self, raw_file_path):
+        """
+        检查给定的 RAW 文件是否有对应的 .acr 或 .xmp 编辑文件。
+        """
+        if not raw_file_path:
+            return False
+
+        base_name = os.path.splitext(os.path.basename(raw_file_path))[0]
+        raw_dir = os.path.dirname(raw_file_path)
+
+        acr_path = os.path.join(raw_dir, f"{base_name}.acr")
+        xmp_path = os.path.join(raw_dir, f"{base_name}.xmp")
+
+        is_modified = os.path.exists(acr_path) or os.path.exists(xmp_path)
+        logger.debug(f"检查 RAW 文件 '{os.path.basename(raw_file_path)}' 的修改状态: ACR 存在={os.path.exists(acr_path)}, XMP 存在={os.path.exists(xmp_path)}. 结果: {is_modified}")
+        return is_modified
+
 file_manager = FileManager()
