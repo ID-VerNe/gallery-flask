@@ -135,7 +135,6 @@ export async function loadFoldersAction() {
 
             ui.renderThumbnails();
             ui.updateUI();
-            ui.setOpenRawButtonState(!appState.isViewerMode);
 
             // Save loaded history (current index and sort order)
             if (appState.isLoaded) {

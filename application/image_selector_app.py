@@ -237,22 +237,37 @@ class ImageSelectorApp:
         return None
 
     def open_current_raw(self):
-        logger.info("应用层请求打开当前 RAW 文件。")
-        raw_path = self.get_current_raw_path()
+        logger.info("应用层请求打开当前 RAW 文件或对应的 JPG/PNG 文件。")
 
-        if raw_path:
-             try:
-                success = file_manager.open_file_with_default_app(raw_path)
-                logger.info("应用层成功调用 FileManager 打开 RAW 路径。")
-                return success
-             except (FileNotFoundError, ExternalToolError, ImageSelectorError) as e:
-                  logger.error(f"应用层调用 FileManager 打开 RAW 路径时失败: {e}", exc_info=True)
-                  raise e
-             except Exception as e:
-                 logger.error(f"应用层调用 FileManager 打开 RAW 路径时发生意外错误: {e}", exc_info=True)
-                 raise ImageSelectorError(f"无法打开 RAW 文件: {e}") from e
+        if self._current_index == -1 or not self._image_pairs:
+            logger.warning("应用层尝试打开文件但未选中任何图片或图片列表为空。")
+            raise InvalidIndexError("请选择一张图片对后再尝试打开文件。")
+
+        current_pair = self._image_pairs[self._current_index]
+        raw_path = current_pair.get('raw_path')
+        jpg_path = current_pair.get('jpg_path') # This can be JPG, JPEG, or PNG based on find_image_pairs
+
+        opened_file_path = None
+
+        if raw_path and os.path.exists(raw_path):
+            logger.info(f"找到并尝试打开 RAW 文件: {os.path.basename(raw_path)}")
+            opened_file_path = raw_path
+        elif jpg_path and os.path.exists(jpg_path):
+            logger.info(f"未找到 RAW 文件或 RAW 路径无效，尝试打开对应的 JPG/PNG 文件: {os.path.basename(jpg_path)}")
+            opened_file_path = jpg_path
         else:
-            logger.warning("应用层尝试打开 RAW 文件但未选中任何图片或对应的 RAW 路径不可用。")
-            raise InvalidIndexError("请选择一张图片对后再尝试打开 RAW 文件。")
+            logger.error(f"当前选中图片 (索引 {self._current_index}) 既没有有效的 RAW 路径也没有有效的 JPG/PNG 路径。")
+            raise FileNotFoundError(f"找不到当前选中图片 ({self._current_index + 1}) 的 RAW 或 JPG/PNG 文件。")
+
+        try:
+            success = file_manager.open_file_with_default_app(opened_file_path)
+            logger.info(f"应用层成功调用 FileManager 打开文件: {os.path.basename(opened_file_path)}")
+            return success
+        except (FileNotFoundError, ExternalToolError, ImageSelectorError) as e:
+            logger.error(f"应用层调用 FileManager 打开文件时失败: {e}", exc_info=True)
+            raise e
+        except Exception as e:
+            logger.error(f"应用层调用 FileManager 打开文件时发生意外错误: {e}", exc_info=True)
+            raise ImageSelectorError(f"无法打开文件: {os.path.basename(opened_file_path)}: {e}") from e
 
 app_state = ImageSelectorApp()

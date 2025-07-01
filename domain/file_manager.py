@@ -366,10 +366,13 @@ class FileManager:
 
         try:
             raw_extensions = ('.cr2', '.nef', '.arw', '.dng', '.orf', '.rw2', '.3fr', '.ari', '.bmq', '.cap', '.cin', '.cxr', '.drf', '.dcs', '.dcr', '.dqf', '.efw', '.erf', '.fff', '.iiq', '.jpeg', '.j6f', '.kdc', '.mos', '.mrf', '.nrw', '.pef', '.pxn', '.qtk', '.raf', '.raw', '.rdc', '.sr2', '.srf', '.srw', '.x3f')
+            jpg_extensions = ('.jpg', '.jpeg', '.png') # Define jpg_extensions here
             _, file_extension = os.path.splitext(file_path)
+            lower_extension = file_extension.lower()
 
-            if file_extension.lower() in raw_extensions and self._photoshop_path and os.path.exists(self._photoshop_path):
-                logger.info(f"文件 '{os.path.basename(file_path)}' 匹配 RAW 格式，尝试使用配置的 Photoshop 打开: {self._photoshop_path}")
+            # Check if the file is a RAW or a supported image format (JPG, JPEG, PNG) AND Photoshop path is configured and exists
+            if (lower_extension in raw_extensions or lower_extension in jpg_extensions) and self._photoshop_path and os.path.exists(self._photoshop_path):
+                logger.info(f"文件 '{os.path.basename(file_path)}' 匹配 RAW 或 JPG/PNG 格式，尝试使用配置的 Photoshop 打开: {self._photoshop_path}")
                 try:
                     subprocess.Popen([self._photoshop_path, file_path], shell=False)
                     logger.info("Photoshop 打开命令执行成功。")
@@ -388,16 +391,19 @@ class FileManager:
                 logger.debug(f"尝试使用系统默认程序打开文件: {file_path}")
                 try:
                     if platform.system() == "Windows":
-                        os.startfile(file_path)
-                        logger.debug("Windows 系统下使用 os.startfile 打开文件。")
+                        # Convert forward slashes to backslashes for Windows commands
+                        windows_file_path = file_path.replace('/', '\\')
+                        # Use subprocess.run with 'start' command for better handling of paths, especially network paths
+                        subprocess.run(['start', '', windows_file_path], shell=True, check=True)
+                        logger.debug(f"Windows 系统下使用 'start' 命令通过 subprocess 打开文件: {windows_file_path}")
 
                     elif platform.system() == "Darwin":
                         subprocess.run(["open", file_path], check=True, capture_output=True)
-                        logger.debug("macOS 系统下使用 'open' 命令打开文件。")
+                        logger.debug(f"macOS 系统下使用 'open' 命令打开文件: {file_path}")
 
                     else:
                         subprocess.run(["xdg-open", file_path], check=True, capture_output=True)
-                        logger.debug("Posix 系统下使用 'xdg-open' 命令打开文件。")
+                        logger.debug(f"Posix 系统下使用 'xdg-open' 命令打开文件: {file_path}")
 
                     logger.info("系统默认打开命令执行成功。")
                     return True
@@ -406,7 +412,8 @@ class FileManager:
                      logger.error(f"无法找到系统默认打开命令或程序路径异常 for: {file_path}", exc_info=True)
                      raise ExternalToolError(f"无法找到系统程序打开文件: {os.path.basename(file_path)}. 请确保文件类型有默认关联程序。") from None
                 except subprocess.CalledProcessError as e:
-                     logger.error(f"系统默认打开命令执行失败，返回码 {e.returncode} for: {file_path}. Stdout: {e.stdout.decode()}, Stderr: {e.stderr.decode()}", exc_info=True)
+                     # Log error without trying to decode stdout/stderr which might be None
+                     logger.error(f"系统默认打开命令执行失败，返回码 {e.returncode} for: {file_path}", exc_info=True)
                      raise ExternalToolError(f"系统默认打开命令执行失败: {os.path.basename(file_path)}") from e
                 except Exception as e:
                     logger.error(f"尝试使用系统默认程序打开文件时发生意外错误: {file_path}, 错误: {e}", exc_info=True)

@@ -249,7 +249,7 @@ export function updateNavigationButtons() {
     elements.nextImageButton.disabled = !canGoNext;
     elements.prevImageOverlayButton.disabled = !canGoPrev; // Update overlay button
     elements.nextImageOverlayButton.disabled = !canGoNext; // Update overlay button
-    // elements.openRawButton.disabled = !canOpenRaw; // 此行将由 setOpenRawButtonState 控制
+    elements.openRawButton.disabled = !canOpenRaw;
 
     const jpgPathSet = elements.jpgFolderPathInput && elements.jpgFolderPathInput.value.length > 0;
     const rawPathSet = elements.rawFolderPathInput && elements.rawFolderPathInput.value.length > 0;
@@ -287,17 +287,6 @@ export function highlightSelectedThumbnail() {
 }
 
 /**
- * Sets the disabled state of the 'Open RAW' button.
- * @param {boolean} enable If true, the button is enabled; otherwise, it's disabled.
- */
-export function setOpenRawButtonState(enable) {
-    if (elements.openRawButton) {
-        elements.openRawButton.disabled = !enable;
-    } else {
-        console.warn('UI: 无法设置打开 RAW 按钮状态，elements.openRawButton 为 null.');
-    }
-}
-
 /**
  * Shows the loading spinner.
  * Call before starting an asymmetrical operation.
