@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Rust / Tauri build artifacts
+src-tauri/target/
+
+# Frontend build outputs
+dist/
+dist-ssr/
+*.local
+
+# Python / Virtualenv / Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+app_cache/
+.glue/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment & Logs & User History
+.env
+*.log
+history.json
