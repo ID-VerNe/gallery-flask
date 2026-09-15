@@ -1,0 +1,87 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PhotoFileInfo {
+    pub name: String,
+    pub extension: String,
+    pub path: String,
+    pub size: u64,
+    pub mtime: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ExifData {
+    pub shutter_speed: Option<String>,
+    pub aperture: Option<String>,
+    pub iso: Option<String>,
+    pub focal_length: Option<String>,
+    pub date_time: Option<String>,
+    pub camera_make: Option<String>,
+    pub camera_model: Option<String>,
+    pub lens_model: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum PhotoGroupStatus {
+    Complete,
+    JpgOnly,
+    RawOnly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PhotoGroupInfo {
+    pub id: String,
+    pub base_name: String,
+    pub jpg: Option<PhotoFileInfo>,
+    pub raw: Option<PhotoFileInfo>,
+    pub status: PhotoGroupStatus,
+    pub rating: u8,         // 0..5 stars
+    pub flag: String,       // "none", "pick", "reject"
+    pub has_xmp: bool,
+    pub exif: Option<ExifData>,
+    pub thumbnail_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderScanResult {
+    pub groups: Vec<PhotoGroupInfo>,
+    pub total_count: usize,
+    pub jpg_folder: String,
+    pub raw_folder: String,
+    pub is_viewer_mode: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSettings {
+    pub default_jpg_folder: String,
+    pub default_raw_folder: String,
+    pub photoshop_path: String,
+    pub thumbnail_width: u32,
+    pub sort_order: String,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            default_jpg_folder: String::new(),
+            default_raw_folder: String::new(),
+            photoshop_path: r"C:\Program Files\Adobe\Adobe Photoshop 2025\Photoshop.exe".to_string(),
+            thumbnail_width: 200,
+            sort_order: "time_filename".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportItem {
+    pub base_name: String,
+    pub jpg_path: Option<String>,
+    pub raw_path: Option<String>,
+}

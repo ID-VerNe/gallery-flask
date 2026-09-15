@@ -1,147 +1,74 @@
 [English Version](README.md)
 
-# 快速选图工具
+# 快速选图工具 (Gallery Culling) — Tauri 2.0 原生极速版
 
-一个基于 Python Flask 构建的本地网络应用程序，用于快速浏览和选择本地文件夹中匹配的 JPG/JPEG 和 RAW 图像对。旨在帮助摄影师和图像处理专业人员高效地审阅大量照片会话。
+一个基于 **Tauri 2.0 + Rust + React 19 + TypeScript** 构建的高性能专业选片桌面应用。专为摄影师和图像处理专业人员打造，可秒级加载数千至上万张照片，极速配对浏览 JPG 与相机 RAW 图像，支持 1-5 星级打分、Pick/Reject 标记、双图并排联动对比与 Adobe Lightroom / Photoshop XMP 侧边栏双向无缝互通。
 
-## 功能
+---
 
-*   **原生文件夹选择：** 使用系统原生对话框选择 JPG 和 RAW 源文件夹。
-*   **图像对匹配：** 根据文件名基础（不区分大小写）自动查找匹配的 JPG/JPEG 和 RAW 文件。
-*   **缩略图视图：** 显示所有已识别图像对的交互式缩略图，以便快速浏览。
-*   **大图预览：** 显示所选 JPG 图像的大图预览。
-*   **交互式预览：** 使用鼠标滚轮和点击拖动来缩放和平移预览图像。
-*   **RAW 文件访问：** 通过系统命令，使用配置的外部应用程序（如 Photoshop）快速打开当前选择的对应 RAW 文件。
-*   **导航：** 使用专用按钮或键盘快捷键（左/右箭头）在图像对之间导航。
-*   **默认路径：** 将选定的文件夹路径保存到配置文件（.env），以便后续运行快速加载。
-*   **缓存：** 本地生成并缓存缩略图，以便在初次扫描后更快地加载。
+## 核心特性
 
-## 技术栈
+*   **极致性能架构：** 采用 Tauri 2.0 原生架构，摆脱 Python 运行环境依赖与 Tkinter 外部对话框子进程，极小内存占用与秒开速度。
+*   **万级虚拟滚动：** 前端依托 `@tanstack/react-virtual` 虚拟网格，无论 1,000 还是 10,000 张照片，DOM 节点恒定，60fps 丝滑流畅。
+*   **混合极速缩略图引擎：** Rust 原生线程池优先提取 EXIF / RAW 内嵌预览图（数毫秒级），缺失时自动通过 `fast_image_resize` (SIMD 指令集加速) 进行下采样并持久化磁盘缓存。
+*   **RAW 与 JPG 智能配对：** 忽略大小写自动将同名 JPG/PNG 与各种相机 RAW（Sony ARW、Canon CR2/CR3、Nikon NEF、DNG 等）配对关联。
+*   **双图并排联动对比 (Split View)：** 创新支持双图同屏对比模式，支持**双视口联动同步平移与缩放**，选对焦清晰度与面部表情的神器。
+*   **Lightroom / Capture One XMP 双向互通：** 软件内 1-5 星级打分与 Pick/Reject 标记，自动无损同步写入/读取标准 `.xmp` 侧边栏文件，修图软件打开直接生效。
+*   **单手键盘极速选片：**
+    *   `1` ~ `5`：设置 1-5 星级
+    *   `0` / `U`：清除评级与标记
+    *   `P`：标记保留 (Pick，绿标)
+    *   `X`：标记淘汰 (Reject，红标)
+    *   `A` / `D` 或 `←` / `→`：上一张 / 下一张
+    *   `O`：使用 Photoshop 或系统默认程序打开当前 RAW 原片
+    *   `C`：切换双图对比视图
+    *   `G`：切换纯缩略图网格视图
+*   **批量挑选导出：** 一键将保留 (Pick) 或指定星级以上的 RAW 原片、JPG 预览及 XMP 侧边栏文件快速复制到目标目录。
+*   **本地会话记忆：** 内嵌 SQLite 自动记忆上一次打开的目录与选片浏览断点，下次打开秒级还原。
 
-*   **后端：** Python 3, Flask, Pillow, python-dotenv, subprocess, os, sys, platform, hashlib, io, Tkinter (用于独立进程中的对话框)。
-*   **前端：** HTML, CSS, JavaScript (ES 模块), Fetch API。
+---
 
-## 入门
+## 架构技术栈
+
+*   **桌面框架：** Tauri 2.0 (`tauri`, `protocol-asset`)
+*   **后端语言：** Rust (`image`, `fast_image_resize`, `kamadak-exif`, `rusqlite`, `trash`, `rayon`, `tokio`)
+*   **前端框架：** React 19, TypeScript, Vite 6, Tailwind CSS
+*   **包管理器：** `pnpm`
+*   **旧版归档：** 原 Python Flask 实现完整归档在 `legacy_flask/` 目录下。
+
+---
+
+## 开发与运行
 
 ### 先决条件
+*   **Node.js** >= 18 (推荐 v20+)
+*   **pnpm** >= 9 (推荐 v10+)
+*   **Rust** >= 1.77 (`rustc` 与 `cargo`)
 
-*   Python 3.6+
-*   `pip` (Python 包安装程序)
-
-### 安装
+### 快速启动
 
 1.  克隆仓库：
     ```bash
-    git clone https://github.com/ID-VerNe/gallery-flask.git 
+    git clone https://github.com/ID-VerNe/gallery-flask.git
     cd gallery-flask
     ```
-2.  创建 Python 虚拟环境（推荐）：
+2.  安装前端依赖：
     ```bash
-    python -m venv .venv
+    pnpm install
     ```
-3.  激活虚拟环境：
-    *   在 Windows 上：
-        ```bash
-        .venv\Scripts\activate
-        ```
-    *   在 macOS / Linux 上：
-        ```bash
-        source .venv/bin/activate
-        ```
-4.  安装所需的 Python 包：
+3.  启动开发环境：
     ```bash
-    pip install -r requirements.txt
+    pnpm tauri dev
     ```
-5.  创建配置文件：
-    复制 `.env` 文件模板（如果有）或手动在项目根目录 (`<project_directory>/config/`) 中创建 `config/.env` 文件。
-    有关 `.env` 内容的详细信息，请参阅[配置](#配置)部分。
+    或在 Windows 上双击运行 `start_app.cmd`。
 
-## 配置
-
-应用程序使用位于项目根目录 `config/` 目录中的 `.env` 文件进行配置。
-
-创建或编辑 `config/.env`，包含以下键：
-
-```dotenv
-# 默认文件夹路径 - 如果设置，应用程序将加载这些路径
-DEFAULT_JPG_FOLDER=
-DEFAULT_RAW_FOLDER=
-
-# 缓存目录名称（相对于应用程序的可执行文件/主脚本目录）
-CACHE_DIR_NAME=app_cache
-
-# 缩略图宽度（像素）。高度自动计算。
-THUMBNAIL_WIDTH=150
-
-# Photoshop 可执行文件路径（可选）。
-# 如果设置且存在，用于打开支持扩展名的 RAW 文件。
-# 示例 Windows: C:\Program Files\Adobe\Adobe Photoshop CC 2023\Photoshop.exe
-# 示例 macOS: /Applications/Adobe Photoshop CC 2023/Adobe Photoshop CC 2023.app/Contents/MacOS/Adobe Photoshop
-PHOTOSHOP_PATH=
-
-# Flask 应用程序主机和端口
-FLASK_RUN_HOST=127.0.0.1
-FLASK_RUN_PORT=5000
+### 编译打包单可执行文件 (Release Build)
+```bash
+pnpm tauri build
 ```
-请记住填写 `DEFAULT_JPG_FOLDER`、`DEFAULT_RAW_FOLDER` 或 `PHOTOSHOP_PATH`，如果您想使用默认设置或特定的 RAW 编辑器。应用程序会将成功加载的路径保存回此文件。
+编译生成的便携版 `.exe` 与安装程序将输出在 `src-tauri/target/release/`。
 
-## 如何运行
-
-1.  确保您位于项目根目录 (`gallery-flask`)。
-2.  激活虚拟环境（如果您使用了虚拟环境）：
-    *   在 Windows 上：`.venv\Scripts\activate`
-    *   在 macOS / Linux 上：`source .venv/bin/activate`
-3.  运行主 Python 脚本：
-    ```bash
-    python main.py
-    ```
-    Flask 开发服务器将启动。您将在终端中看到日志输出。
-4.  打开您的网络浏览器并导航到日志中显示的地址（通常是 `http://127.0.0.1:5000/`）。
-
-或者，在 Windows 上，您可以使用提供的 `start_app.cmd` 脚本，它会激活虚拟环境并运行应用程序，如果发生错误则保持窗口打开。
-
-## 使用方法
-
-1.  在浏览器界面中，输入 JPG 和 RAW 文件夹的完整路径，或点击“浏览...”按钮使用原生文件夹选择对话框。
-2.  点击“加载图片对”按钮。应用程序将扫描文件夹并在右侧窗格中以缩略图形式列出匹配的图像对。
-3.  点击缩略图选择图像对。大图预览将显示 JPG 图像，底部的信息标签将更新。
-4.  使用“上一张”和“下一张”按钮或左/右箭头键在选定图像之间导航。
-5.  使用鼠标滚轮放大/缩小预览图像。放大时点击并拖动（平移）图像。
-6.  点击“打开 RAW”按钮或按“O”键，使用系统默认应用程序或配置的 Photoshop 路径打开当前选择对应的 RAW 文件。
-
-## 文件结构
-
-```
-project_root/
-├── interface/           # Flask API 路由和前端文件 (HTML, CSS, JS)
-│   ├── api.py           # Flask 路由，与下层集成，Tkinter 的子进程
-│   ├── static/          # 静态前端资源 (CSS, JS, 图片)
-│   │   ├── css/
-│   │   ├── js/          # 模块化 JavaScript 文件
-│   │   └── assets/
-│   └── templates/       # HTML 模板
-│       └── index.html   # 主 UI HTML
-├── application/         # 应用程序层 - 管理应用程序状态和协调任务
-│   └── image_selector_app.py
-├── domain/              # 领域/基础设施层 - 处理文件系统、图像处理、外部调用
-│   └── file_manager.py
-├── utils/              # 工具层 - 通用辅助函数 (配置加载、异常)
-│   ├── config_loader.py
-│   └── exceptions.py
-├── scripts/            # 辅助脚本，不属于主应用程序 (例如，Tkinter 对话框子进程)
-│   └── folder_selector_dialog.py
-├── config/             # 配置文件
-│   └── .env             # 环境变量和设置
-├── main.py             # 应用程序入口点
-├── requirements.txt    # Python 依赖
-├── start_app.cmd       # Windows 启动脚本
-└── README.md           # 此文件
-```
+---
 
 ## 许可证
-
 本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件。
-
-## 贡献
-
-欢迎贡献！如果您发现错误或想到新功能，请随时提出问题或提交拉取请求。
