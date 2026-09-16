@@ -15,6 +15,7 @@ export interface ExifData {
   cameraMake?: string;
   cameraModel?: string;
   lensModel?: string;
+  orientation?: number;
 }
 
 export type CullFlag = 'none' | 'pick' | 'reject';

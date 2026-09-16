@@ -6,6 +6,7 @@ import { SplitCompareViewport } from './components/SplitCompareViewport';
 import { BottomBar } from './components/BottomBar';
 import { BatchExportModal } from './components/BatchExportModal';
 import { SettingsModal } from './components/SettingsModal';
+import { MetadataEditorModal } from './components/MetadataEditorModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { AppSettings, FilterMode, PhotoGroupInfo, SortOrder, ViewMode } from './types';
 import { api } from './services/api';
@@ -16,12 +17,15 @@ export default function App() {
   const [groups, setGroups] = useState<PhotoGroupInfo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [compareIndex, setCompareIndex] = useState<number>(1);
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [isPinnedOnLeft, setIsPinnedOnLeft] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('single');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('time_filename');
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMetadataOpen, setIsMetadataOpen] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
 
   // Load initial settings and default paths on startup
@@ -56,7 +60,87 @@ export default function App() {
   }, [groups, filterMode]);
 
   const currentGroup = filteredGroups[selectedIndex] || undefined;
-  const compareGroup = filteredGroups[compareIndex] || filteredGroups[selectedIndex + 1] || undefined;
+
+  // Compute compare groups based on pinned reference
+  const { leftCompareGroup, rightCompareGroup, isLeftPinned, isRightPinned } = useMemo(() => {
+    const leftBase = filteredGroups[selectedIndex];
+    const rightDefault =
+      filteredGroups[compareIndex] ||
+      filteredGroups[selectedIndex + 1] ||
+      filteredGroups[0];
+
+    if (!pinnedId) {
+      return {
+        leftCompareGroup: leftBase,
+        rightCompareGroup: rightDefault,
+        isLeftPinned: false,
+        isRightPinned: false,
+      };
+    }
+
+    const pinnedGroup = filteredGroups.find((g) => g.id === pinnedId) || leftBase;
+
+    if (isPinnedOnLeft) {
+      return {
+        leftCompareGroup: pinnedGroup,
+        rightCompareGroup: filteredGroups[compareIndex] || rightDefault,
+        isLeftPinned: true,
+        isRightPinned: false,
+      };
+    } else {
+      return {
+        leftCompareGroup: filteredGroups[selectedIndex] || leftBase,
+        rightCompareGroup: pinnedGroup,
+        isLeftPinned: false,
+        isRightPinned: true,
+      };
+    }
+  }, [filteredGroups, selectedIndex, compareIndex, pinnedId, isPinnedOnLeft]);
+
+  // Pin / Unpin Left as Reference
+  const handleTogglePinLeft = useCallback(() => {
+    if (isLeftPinned) {
+      setPinnedId(null);
+    } else if (leftCompareGroup) {
+      setPinnedId(leftCompareGroup.id);
+      setIsPinnedOnLeft(true);
+    }
+  }, [isLeftPinned, leftCompareGroup]);
+
+  // Pin / Unpin Right as Reference
+  const handleTogglePinRight = useCallback(() => {
+    if (isRightPinned) {
+      setPinnedId(null);
+    } else if (rightCompareGroup) {
+      setPinnedId(rightCompareGroup.id);
+      setIsPinnedOnLeft(false);
+    }
+  }, [isRightPinned, rightCompareGroup]);
+
+  // Swap A / B (Candidate becomes new pinned benchmark or swap positions)
+  const handleSwapCompare = useCallback(() => {
+    if (pinnedId) {
+      if (isPinnedOnLeft && rightCompareGroup) {
+        setPinnedId(rightCompareGroup.id);
+      } else if (!isPinnedOnLeft && leftCompareGroup) {
+        setPinnedId(leftCompareGroup.id);
+      }
+    } else {
+      const temp = selectedIndex;
+      setSelectedIndex(compareIndex);
+      setCompareIndex(temp);
+    }
+  }, [pinnedId, isPinnedOnLeft, leftCompareGroup, rightCompareGroup, selectedIndex, compareIndex]);
+
+  // Benchmark toggle shortcut (B)
+  const handleTogglePinBenchmark = useCallback(() => {
+    if (pinnedId) {
+      setPinnedId(null);
+    } else if (leftCompareGroup) {
+      setPinnedId(leftCompareGroup.id);
+      setIsPinnedOnLeft(true);
+    }
+  }, [pinnedId, leftCompareGroup]);
 
   // Folder scanning handler
   const handleScan = useCallback(async () => {
@@ -108,16 +192,41 @@ export default function App() {
     }
   };
 
-  // Selection navigation
+  // Selection navigation (aware of pinned compare mode)
   const handlePrev = useCallback(() => {
-    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-  }, []);
+    if (viewMode === 'split' && pinnedId && isPinnedOnLeft) {
+      setCompareIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    } else {
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    }
+  }, [viewMode, pinnedId, isPinnedOnLeft]);
 
   const handleNext = useCallback(() => {
-    setSelectedIndex((prev) =>
-      prev < filteredGroups.length - 1 ? prev + 1 : prev,
-    );
-  }, [filteredGroups.length]);
+    if (viewMode === 'split' && pinnedId && isPinnedOnLeft) {
+      setCompareIndex((prev) =>
+        prev < filteredGroups.length - 1 ? prev + 1 : prev,
+      );
+    } else {
+      setSelectedIndex((prev) =>
+        prev < filteredGroups.length - 1 ? prev + 1 : prev,
+      );
+    }
+  }, [viewMode, pinnedId, isPinnedOnLeft, filteredGroups.length]);
+
+  // Select photo from thumbnail list
+  const handleSelectPhoto = useCallback(
+    (idx: number) => {
+      if (viewMode === 'split' && pinnedId && isPinnedOnLeft) {
+        setCompareIndex(idx);
+      } else {
+        setSelectedIndex(idx);
+        if (viewMode === 'split' && !pinnedId) {
+          setCompareIndex(Math.min(idx + 1, filteredGroups.length - 1));
+        }
+      }
+    },
+    [viewMode, pinnedId, isPinnedOnLeft, filteredGroups.length],
+  );
 
   // Update Rating & Flag (syncs to XMP)
   const handleRate = useCallback(
@@ -193,6 +302,30 @@ export default function App() {
     }
   }, [selectedIndex, jpgFolder, rawFolder, sortOrder]);
 
+  // Metadata batch updated handler
+  const handleMetadataUpdated = useCallback(
+    (targetIds: string[], lensModel: string, focalLength: string, aperture: string) => {
+      setGroups((prev) =>
+        prev.map((g) => {
+          if (targetIds.includes(g.id)) {
+            return {
+              ...g,
+              hasXmp: true,
+              exif: {
+                ...g.exif,
+                lensModel: lensModel || g.exif?.lensModel,
+                focalLength: focalLength || g.exif?.focalLength,
+                aperture: aperture || g.exif?.aperture,
+              },
+            };
+          }
+          return g;
+        }),
+      );
+    },
+    [],
+  );
+
   // Register single-handed keyboard shortcuts
   useKeyboardShortcuts({
     onPrev: handlePrev,
@@ -202,6 +335,9 @@ export default function App() {
     onOpenExternal: handleOpenExternal,
     onToggleCompare: handleToggleCompare,
     onToggleGrid: handleToggleGrid,
+    onSwapCompare: handleSwapCompare,
+    onTogglePinReference: handleTogglePinBenchmark,
+    onOpenMetadataModal: () => setIsMetadataOpen(true),
   });
 
   return (
@@ -228,6 +364,7 @@ export default function App() {
         onViewModeChange={setViewMode}
         onOpenExportModal={() => setIsExportOpen(true)}
         onOpenSettingsModal={() => setIsSettingsOpen(true)}
+        onOpenMetadataModal={() => setIsMetadataOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -247,8 +384,13 @@ export default function App() {
 
         {viewMode === 'split' && (
           <SplitCompareViewport
-            leftGroup={currentGroup}
-            rightGroup={compareGroup}
+            leftGroup={leftCompareGroup}
+            rightGroup={rightCompareGroup}
+            isLeftPinned={isLeftPinned}
+            isRightPinned={isRightPinned}
+            onTogglePinLeft={handleTogglePinLeft}
+            onTogglePinRight={handleTogglePinRight}
+            onSwap={handleSwapCompare}
             onRate={(g, r) => handleRate(r, g)}
             onFlag={(g, f) => handleFlag(f, g)}
             onSelectLeft={() => {}}
@@ -261,11 +403,12 @@ export default function App() {
         )}
 
         {viewMode === 'grid' && (
-          <div className="flex-1 p-3">
+          <div className="flex-1 h-full w-full overflow-hidden">
             <ThumbnailGrid
               groups={filteredGroups}
               selectedIndex={selectedIndex}
-              onSelect={(idx) => {
+              onSelect={handleSelectPhoto}
+              onDoubleClick={(idx) => {
                 setSelectedIndex(idx);
                 setViewMode('single');
               }}
@@ -280,7 +423,7 @@ export default function App() {
             <ThumbnailGrid
               groups={filteredGroups}
               selectedIndex={selectedIndex}
-              onSelect={setSelectedIndex}
+              onSelect={handleSelectPhoto}
               isSidebar={true}
             />
           </div>
@@ -293,6 +436,7 @@ export default function App() {
         currentIndex={selectedIndex}
         totalCount={filteredGroups.length}
         onOpenExternal={handleOpenExternal}
+        onOpenMetadataModal={() => setIsMetadataOpen(true)}
       />
 
       {/* Batch Export Modal */}
@@ -307,6 +451,16 @@ export default function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onSettingsSaved={(s) => setSettings(s)}
+      />
+
+      {/* Manual Lens Metadata Editor Modal */}
+      <MetadataEditorModal
+        isOpen={isMetadataOpen}
+        onClose={() => setIsMetadataOpen(false)}
+        currentGroup={currentGroup}
+        filteredGroups={filteredGroups}
+        allGroups={groups}
+        onMetadataUpdated={handleMetadataUpdated}
       />
     </div>
   );

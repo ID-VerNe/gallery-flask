@@ -7,7 +7,7 @@ use crate::db::Database;
 use crate::models::{AppSettings, ExportItem, FolderScanResult};
 use crate::scanner::scan_folders;
 use crate::thumbnail::get_or_create_thumbnail;
-use crate::xmp::write_xmp;
+use crate::xmp::{update_xmp_metadata, write_xmp};
 
 pub struct AppState {
     pub db: Database,
@@ -57,6 +57,33 @@ pub async fn update_rating_flag_cmd(
     })
     .await
     .map_err(|e| format!("更新评级任务异常: {}", e))?
+}
+
+#[tauri::command]
+pub async fn batch_update_metadata_cmd(
+    file_paths: Vec<String>,
+    lens_model: Option<String>,
+    focal_length: Option<String>,
+    aperture: Option<String>,
+) -> Result<usize, String> {
+    tokio::task::spawn_blocking(move || {
+        let mut count = 0;
+        let lens = lens_model.as_deref();
+        let focal = focal_length.as_deref();
+        let ap = aperture.as_deref();
+
+        for file_path in file_paths {
+            let path = Path::new(&file_path);
+            if path.exists() {
+                if update_xmp_metadata(path, lens, focal, ap).is_ok() {
+                    count += 1;
+                }
+            }
+        }
+        Ok(count)
+    })
+    .await
+    .map_err(|e| format!("批量更新元数据任务异常: {}", e))?
 }
 
 #[tauri::command]

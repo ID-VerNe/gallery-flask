@@ -25,6 +25,7 @@ pub fn run() {
             open_in_default_app_cmd,
             trash_photos_cmd,
             batch_export_cmd,
+            batch_update_metadata_cmd,
             get_settings_cmd,
             save_settings_cmd,
             save_session_cmd,

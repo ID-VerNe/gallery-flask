@@ -7,6 +7,7 @@ interface BottomBarProps {
   currentIndex: number;
   totalCount: number;
   onOpenExternal: () => void;
+  onOpenMetadataModal?: () => void;
 }
 
 export const BottomBar: React.FC<BottomBarProps> = ({
@@ -14,6 +15,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
   currentIndex,
   totalCount,
   onOpenExternal,
+  onOpenMetadataModal,
 }) => {
   return (
     <footer className="h-9 bg-[#18191e] border-t border-[#292c37] flex items-center justify-between px-3 text-[11px] text-gray-400 shrink-0">
@@ -58,11 +60,17 @@ export const BottomBar: React.FC<BottomBarProps> = ({
         <span className="bg-[#242733] px-1.5 py-0.5 rounded text-[10px] font-mono text-gray-300">A/D</span>
         <span>切片</span>
         <span className="text-gray-600">|</span>
-        <span className="bg-[#242733] px-1.5 py-0.5 rounded text-[10px] font-mono text-gray-300">O</span>
-        <span>打开</span>
-        <span className="text-gray-600">|</span>
         <span className="bg-[#242733] px-1.5 py-0.5 rounded text-[10px] font-mono text-gray-300">C</span>
         <span>对比</span>
+        <span className="text-gray-600">|</span>
+        <button
+          onClick={onOpenMetadataModal}
+          className="flex items-center gap-1 hover:text-white transition"
+          title="点击打开手动镜头与元数据编辑 (快捷键 M)"
+        >
+          <span className="bg-[#242733] px-1.5 py-0.5 rounded text-[10px] font-mono text-amber-300">M</span>
+          <span className="text-amber-300">镜头元数据</span>
+        </button>
       </div>
 
       {/* Right: Counter & Quick Open */}

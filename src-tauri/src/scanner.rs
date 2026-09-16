@@ -4,7 +4,7 @@ use std::io::BufReader;
 use std::path::Path;
 
 use crate::models::{ExifData, FolderScanResult, PhotoFileInfo, PhotoGroupInfo, PhotoGroupStatus};
-use crate::xmp::{check_sidecar_exists, get_xmp_path, read_xmp};
+use crate::xmp::{check_sidecar_exists, get_xmp_path, read_xmp_full, XmpMetadata};
 
 const RAW_EXTENSIONS: &[&str] = &[
     "arw", "cr2", "cr3", "nef", "dng", "orf", "rw2", "raf", "pef", "sr2", "srf", "x3f",
@@ -86,6 +86,13 @@ pub fn read_exif_metadata(file_path: &Path) -> Option<ExifData> {
         data.lens_model = Some(field.display_value().to_string().trim_matches('"').trim().to_string());
     }
 
+    // Orientation (1..=8)
+    if let Some(field) = exif.get_field(exif::Tag::Orientation, exif::In::PRIMARY) {
+        if let Some(val) = field.value.get_uint(0) {
+            data.orientation = Some(val);
+        }
+    }
+
     Some(data)
 }
 
@@ -159,6 +166,27 @@ pub fn scan_folders(
         HashMap::new()
     };
 
+fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetadata) {
+    if let Some(e) = exif.as_mut() {
+        if (e.lens_model.is_none() || e.lens_model.as_ref().map(|s| s.is_empty()).unwrap_or(true)) && xmp_meta.lens_model.is_some() {
+            e.lens_model = xmp_meta.lens_model.clone();
+        }
+        if (e.focal_length.is_none() || e.focal_length.as_ref().map(|s| s.is_empty()).unwrap_or(true)) && xmp_meta.focal_length.is_some() {
+            e.focal_length = xmp_meta.focal_length.clone();
+        }
+        if (e.aperture.is_none() || e.aperture.as_ref().map(|s| s.is_empty()).unwrap_or(true)) && xmp_meta.aperture.is_some() {
+            e.aperture = xmp_meta.aperture.clone();
+        }
+    } else if xmp_meta.lens_model.is_some() || xmp_meta.focal_length.is_some() || xmp_meta.aperture.is_some() {
+        *exif = Some(ExifData {
+            lens_model: xmp_meta.lens_model.clone(),
+            focal_length: xmp_meta.focal_length.clone(),
+            aperture: xmp_meta.aperture.clone(),
+            ..Default::default()
+        });
+    }
+}
+
     let mut groups: Vec<PhotoGroupInfo> = Vec::new();
 
     if is_viewer_mode || raw_files.is_empty() {
@@ -166,20 +194,28 @@ pub fn scan_folders(
         for (stem_lower, jpg_info) in jpg_files {
             let path_obj = Path::new(&jpg_info.path);
             let has_xmp = check_sidecar_exists(path_obj);
-            let (rating, flag) = if has_xmp {
+            let xmp_meta = if has_xmp {
                 let xmp_path = get_xmp_path(path_obj);
-                let (r, l) = read_xmp(&xmp_path).unwrap_or((0, String::new()));
-                let flag_str = match l.as_str() {
+                read_xmp_full(&xmp_path)
+            } else {
+                None
+            };
+
+            let (rating, flag) = if let Some(m) = &xmp_meta {
+                let flag_str = match m.label.as_str() {
                     "Green" => "pick",
                     "Red" => "reject",
                     _ => "none",
                 };
-                (r, flag_str.to_string())
+                (m.rating, flag_str.to_string())
             } else {
                 (0, "none".to_string())
             };
 
-            let exif = read_exif_metadata(path_obj);
+            let mut exif = read_exif_metadata(path_obj);
+            if let Some(m) = &xmp_meta {
+                merge_xmp_metadata_into_exif(&mut exif, m);
+            }
             let base_name = path_obj.file_stem().and_then(|s| s.to_str()).unwrap_or(&stem_lower).to_string();
 
             groups.push(PhotoGroupInfo {
@@ -219,19 +255,21 @@ pub fn scan_folders(
             let mut has_xmp = false;
             let mut rating = 0u8;
             let mut flag = "none".to_string();
+            let mut xmp_meta: Option<XmpMetadata> = None;
 
             if let Some(raw) = &raw_opt {
                 let raw_p = Path::new(&raw.path);
                 if check_sidecar_exists(raw_p) {
                     has_xmp = true;
                     let xmp_path = get_xmp_path(raw_p);
-                    if let Some((r, l)) = read_xmp(&xmp_path) {
-                        rating = r;
-                        flag = match l.as_str() {
+                    if let Some(m) = read_xmp_full(&xmp_path) {
+                        rating = m.rating;
+                        flag = match m.label.as_str() {
                             "Green" => "pick".to_string(),
                             "Red" => "reject".to_string(),
                             _ => "none".to_string(),
                         };
+                        xmp_meta = Some(m);
                     }
                 }
             } else if let Some(jpg) = &jpg_opt {
@@ -239,25 +277,29 @@ pub fn scan_folders(
                 if check_sidecar_exists(jpg_p) {
                     has_xmp = true;
                     let xmp_path = get_xmp_path(jpg_p);
-                    if let Some((r, l)) = read_xmp(&xmp_path) {
-                        rating = r;
-                        flag = match l.as_str() {
+                    if let Some(m) = read_xmp_full(&xmp_path) {
+                        rating = m.rating;
+                        flag = match m.label.as_str() {
                             "Green" => "pick".to_string(),
                             "Red" => "reject".to_string(),
                             _ => "none".to_string(),
                         };
+                        xmp_meta = Some(m);
                     }
                 }
             }
 
             // Read EXIF: prefer JPG (faster to read header), fallback to RAW
-            let exif = if let Some(jpg) = &jpg_opt {
+            let mut exif = if let Some(jpg) = &jpg_opt {
                 read_exif_metadata(Path::new(&jpg.path))
             } else if let Some(raw) = &raw_opt {
                 read_exif_metadata(Path::new(&raw.path))
             } else {
                 None
             };
+            if let Some(m) = &xmp_meta {
+                merge_xmp_metadata_into_exif(&mut exif, m);
+            }
 
             let base_name = jpg_opt
                 .as_ref()

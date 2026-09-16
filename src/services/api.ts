@@ -96,6 +96,23 @@ export const api = {
   },
 
   /**
+   * Batch update lens metadata (lens model, focal length, aperture) into XMP sidecars
+   */
+  batchUpdateMetadata: async (
+    filePaths: string[],
+    lensModel?: string,
+    focalLength?: string,
+    aperture?: string,
+  ): Promise<number> => {
+    return await invoke<number>('batch_update_metadata_cmd', {
+      filePaths,
+      lensModel: lensModel || null,
+      focalLength: focalLength || null,
+      aperture: aperture || null,
+    });
+  },
+
+  /**
    * Load app settings from SQLite
    */
   getSettings: async (): Promise<AppSettings> => {

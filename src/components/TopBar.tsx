@@ -8,6 +8,7 @@ import {
   Maximize2,
   LayoutGrid,
   Settings,
+  Sliders,
 } from 'lucide-react';
 import { FilterMode, SortOrder, ViewMode } from '../types';
 
@@ -28,6 +29,7 @@ interface TopBarProps {
   onViewModeChange: (val: ViewMode) => void;
   onOpenExportModal: () => void;
   onOpenSettingsModal: () => void;
+  onOpenMetadataModal?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -47,6 +49,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onViewModeChange,
   onOpenExportModal,
   onOpenSettingsModal,
+  onOpenMetadataModal,
 }) => {
   return (
     <header className="h-14 bg-[#18191e] border-b border-[#292c37] flex items-center justify-between px-3 gap-3 shrink-0 text-xs">
@@ -191,6 +194,17 @@ export const TopBar: React.FC<TopBarProps> = ({
             <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
+
+        {/* Manual Lens / Metadata Editor */}
+        <button
+          onClick={onOpenMetadataModal}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#252834] hover:bg-[#323646] text-gray-200 rounded-md active:scale-[0.96] transition-transform font-medium"
+          title="手动镜头元数据录入与批量同步至 XMP (快捷键 M)"
+          aria-label="手动镜头与元数据批量编辑"
+        >
+          <Sliders className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+          <span>手动镜头 (M)</span>
+        </button>
 
         {/* Batch Export */}
         <button

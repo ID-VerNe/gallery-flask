@@ -20,21 +20,53 @@ pub fn get_cache_dir() -> PathBuf {
     }
 }
 
-/// Generate unique cache file path based on image metadata
-pub fn get_cache_path(file_path: &Path, width: u32) -> PathBuf {
+/// Read orientation from EXIF (default 1)
+pub fn read_orientation(file_path: &Path) -> u32 {
+    let file = match File::open(file_path) {
+        Ok(f) => f,
+        Err(_) => return 1,
+    };
+    let mut buf_reader = BufReader::new(file);
+    let exifreader = exif::Reader::new();
+    if let Ok(exif) = exifreader.read_from_container(&mut buf_reader) {
+        if let Some(field) = exif.get_field(exif::Tag::Orientation, exif::In::PRIMARY) {
+            if let Some(val) = field.value.get_uint(0) {
+                return val;
+            }
+        }
+    }
+    1
+}
+
+/// Apply physical orientation transformation to DynamicImage
+pub fn apply_orientation(img: DynamicImage, orientation: u32) -> DynamicImage {
+    match orientation {
+        2 => img.fliph(),
+        3 => img.rotate180(),
+        4 => img.flipv(),
+        5 => img.rotate90().fliph(),
+        6 => img.rotate90(),
+        7 => img.rotate270().fliph(),
+        8 => img.rotate270(),
+        _ => img,
+    }
+}
+
+/// Generate unique cache file path based on image metadata and orientation
+pub fn get_cache_path(file_path: &Path, width: u32, orientation: u32) -> PathBuf {
     let abs_path = fs::canonicalize(file_path).unwrap_or_else(|_| file_path.to_path_buf());
     let mtime = fs::metadata(file_path)
         .and_then(|m| m.modified())
         .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs())
         .unwrap_or(0);
 
-    let key = format!("{}-{}-{}-thumb-v1", abs_path.to_string_lossy(), mtime, width);
+    let key = format!("{}-{}-{}-{}-thumb-v2", abs_path.to_string_lossy(), mtime, width, orientation);
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
     let hash = format!("{:x}", hasher.finalize());
 
     let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("image");
-    let filename = format!("{}_{}_{}.jpg", &hash[..16], stem, width);
+    let filename = format!("{}_{}_{}_rot{}.jpg", &hash[..16], stem, width, orientation);
     get_cache_dir().join(filename)
 }
 
@@ -89,13 +121,14 @@ pub fn resize_simd(img: &DynamicImage, target_width: u32) -> Result<RgbImage, St
         .ok_or_else(|| "Failed to construct RgbImage from resized bytes".to_string())
 }
 
-/// Generate or retrieve thumbnail path
+/// Generate or retrieve thumbnail path with automatic orientation correction
 pub fn get_or_create_thumbnail(file_path: &Path, target_width: u32) -> Result<String, String> {
     if !file_path.exists() {
         return Err(format!("文件不存在: {}", file_path.display()));
     }
 
-    let cache_path = get_cache_path(file_path, target_width);
+    let orientation = read_orientation(file_path);
+    let cache_path = get_cache_path(file_path, target_width, orientation);
 
     // Cache hit check
     if cache_path.exists() {
@@ -111,7 +144,8 @@ pub fn get_or_create_thumbnail(file_path: &Path, target_width: u32) -> Result<St
     // Try fast embedded thumbnail first
     if let Some(thumb_bytes) = try_extract_exif_thumbnail(file_path) {
         if let Ok(thumb_img) = image::load_from_memory(&thumb_bytes) {
-            let resized = resize_simd(&thumb_img, target_width)?;
+            let oriented = apply_orientation(thumb_img, orientation);
+            let resized = resize_simd(&oriented, target_width)?;
             resized.save_with_format(&cache_path, ImageFormat::Jpeg)
                 .map_err(|e| format!("保存缩略图缓存失败: {}", e))?;
             return Ok(cache_path.to_string_lossy().to_string());
@@ -122,7 +156,8 @@ pub fn get_or_create_thumbnail(file_path: &Path, target_width: u32) -> Result<St
     let img = image::open(file_path)
         .map_err(|e| format!("无法打开图片进行缩放 ({}): {}", file_path.display(), e))?;
 
-    let resized = resize_simd(&img, target_width)?;
+    let oriented = apply_orientation(img, orientation);
+    let resized = resize_simd(&oriented, target_width)?;
     resized.save_with_format(&cache_path, ImageFormat::Jpeg)
         .map_err(|e| format!("保存缩略图缓存失败: {}", e))?;
 
@@ -141,5 +176,19 @@ mod tests {
         let resized = resize_simd(&dyn_img, 100).expect("SIMD resize should succeed");
         assert_eq!(resized.width(), 100);
         assert_eq!(resized.height(), 75);
+    }
+
+    #[test]
+    fn test_apply_orientation() {
+        let raw_img = RgbImage::new(400, 300); // 400 wide, 300 high
+        let dyn_img = DynamicImage::ImageRgb8(raw_img);
+        // Orientation 6: Rotate 90 CW => 300 wide, 400 high
+        let rotated = apply_orientation(dyn_img, 6);
+        assert_eq!(rotated.width(), 300);
+        assert_eq!(rotated.height(), 400);
+
+        let resized = resize_simd(&rotated, 150).expect("Resize portrait image");
+        assert_eq!(resized.width(), 150);
+        assert_eq!(resized.height(), 200);
     }
 }

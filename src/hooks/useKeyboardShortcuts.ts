@@ -8,6 +8,9 @@ interface KeyboardShortcutsProps {
   onOpenExternal: () => void;
   onToggleCompare: () => void;
   onToggleGrid: () => void;
+  onSwapCompare?: () => void;
+  onTogglePinReference?: () => void;
+  onOpenMetadataModal?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -18,6 +21,9 @@ export function useKeyboardShortcuts({
   onOpenExternal,
   onToggleCompare,
   onToggleGrid,
+  onSwapCompare,
+  onTogglePinReference,
+  onOpenMetadataModal,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -107,6 +113,33 @@ export function useKeyboardShortcuts({
           onToggleGrid();
           break;
 
+        // Compare Swap (S)
+        case 's':
+        case 'S':
+          if (onSwapCompare) {
+            e.preventDefault();
+            onSwapCompare();
+          }
+          break;
+
+        // Pin Reference (B - Benchmark/Base)
+        case 'b':
+        case 'B':
+          if (onTogglePinReference) {
+            e.preventDefault();
+            onTogglePinReference();
+          }
+          break;
+
+        // Metadata Editor (M)
+        case 'm':
+        case 'M':
+          if (onOpenMetadataModal) {
+            e.preventDefault();
+            onOpenMetadataModal();
+          }
+          break;
+
         default:
           break;
       }
@@ -114,5 +147,16 @@ export function useKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onPrev, onNext, onRate, onFlag, onOpenExternal, onToggleCompare, onToggleGrid]);
+  }, [
+    onPrev,
+    onNext,
+    onRate,
+    onFlag,
+    onOpenExternal,
+    onToggleCompare,
+    onToggleGrid,
+    onSwapCompare,
+    onTogglePinReference,
+    onOpenMetadataModal,
+  ]);
 }
