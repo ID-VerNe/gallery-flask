@@ -1,149 +1,86 @@
-
 [中文版本](README_zh-CN.md)
 
-# Quick Image Selector Tool (快速选图工具)
+# Gallery Culling — Native High-Speed Photo Selector (Tauri 2.0)
 
-A local web-based application built with Python Flask for quickly browsing and selecting matching JPG/JPEG and RAW image pairs from local folders. Designed to help photographers and image processing professionals efficiently review large photo sessions.
+A high-performance desktop photo culling application built with **Tauri 2.0 + Rust + React 19 + TypeScript**. Tailored for photographers and digital asset managers to load thousands of high-resolution photos in milliseconds, pair JPGs with camera RAW files, rate 1-5 stars, flag pick/reject, compare shots side-by-side with synchronized pan & zoom, and seamlessly read/write standard Adobe Lightroom / Capture One XMP sidecar files.
 
-## Features
+---
 
-*   **Native Folder Selection:** Use system native dialogs to select JPG and RAW source folders.
-*   **Image Pair Matching:** Automatically finds matching JPG/JPEG and RAW files based on file name base (case-insensitive).
-*   **Thumbnail View:** Displays interactive thumbnails of all identified image pairs for quick browsing.
-*   **Large Preview:** Shows a large preview of the selected JPG image.
-*   **Interactive Preview:** Zoom and pan the preview image using mouse wheel and click-drag.
-*   **RAW File Access:** Quickly open the corresponding RAW file of the current selection using a configured external application (like Photoshop) via system commands.
-*   **Navigation:** Navigate through image pairs using dedicated buttons or keyboard shortcuts (Left/Right arrows).
-*   **Default Paths:** Saves selected folder paths to a configuration file (.env) for quick loading on subsequent runs.
-*   **Caching:** Generates and caches thumbnails locally for faster loading after the initial scan.
+## Key Features
 
-## Technology Stack
+*   **Native Rust Architecture (Tauri 2.0):** Lightweight footprint, zero Python runtime overhead, instant startup, and direct OS dialog integration.
+*   **3~4 Column Compact Sidebar Grid:** High-density virtualized thumbnail grid powered by `@tanstack/react-virtual`. Smooth 60 FPS scrolling across 10,000+ images without DOM bloat.
+*   **Upright Orientation Engine:** Automatically extracts EXIF Orientation metadata and applies lossless rotation so vertical portraits are always displayed upright.
+*   **Hybrid Accelerated Thumbnail Generation:** Rust native thread pool extracts embedded EXIF/RAW previews within milliseconds; falls back to SIMD-accelerated downsampling (`fast_image_resize`) with persistent disk cache.
+*   **Smart RAW + JPG Pairing:** Case-insensitive pairing for matching base names across JPG/PNG and RAW formats (Sony ARW, Canon CR2/CR3, Nikon NEF, Fujifilm RAF, DNG, etc.).
+*   **Split Compare View (A/B Testing):**
+    *   Side-by-side comparison for focus sharpness and micro-expressions;
+    *   **Mouse Left-Click Pan Dragging:** Freely pan around the frame; with "Sync" enabled, both viewports move with exact pixel-matched delta increments;
+    *   Double-click to toggle between 1.0x and 2.5x zoom with automatic origin reset;
+    *   Pin any reference shot as a benchmark, cycling through candidates on the right.
+*   **Manual Lens & Metadata Editor (XMP Batch Sync):**
+    *   Quickly input Lens Model, Focal Length, and Aperture for vintage manual or adapter lenses;
+    *   Batch-synchronize metadata directly into `.xmp` sidecar files across selected or matched photos for instant recognition in Lightroom / Capture One.
+*   **Two-Way XMP Synchronization:**
+    *   1-5 star ratings and Pick/Reject flags are automatically saved to standard `.xmp` sidecars in real-time.
+*   **Single-Handed Keyboard Shortcuts:**
+    *   `1` ~ `5`: Set 1-5 star rating
+    *   `0` / `U`: Clear rating and flag (Unmark)
+    *   `P`: Flag as Pick (Green)
+    *   `X`: Flag as Reject (Red)
+    *   `A` / `D` or `←` / `→`: Navigate Previous / Next
+    *   `O`: Open current RAW file in Photoshop or default viewer
+    *   `C`: Toggle Single View / Split Compare View
+    *   `[`: Pin Left image as benchmark
+    *   `]` or `Space`: Pin Right candidate as new benchmark
+    *   `B`: Toggle / release benchmark lock
+    *   `S`: Swap Left and Right images
+    *   `M`: Open Manual Lens Metadata Editor
+*   **Batch Export:** Copy Picked or filtered RAW, JPG, and XMP sidecar files into an export destination with one click.
+*   **Session Persistence:** Embedded SQLite database saves folder paths and current browsing position for instant resume.
 
-*   **Backend:** Python 3, Flask, Pillow, python-dotenv, subprocess, os, sys, platform, hashlib, io, Tkinter (for dialogs in separate process).
-*   **Frontend:** HTML, CSS, JavaScript (ES Modules), Fetch API.
+---
 
-## Getting Started
+## Tech Stack
+
+*   **Desktop Shell:** Tauri 2.0 (`tauri`, `protocol-asset`)
+*   **Backend Core:** Rust (`image`, `fast_image_resize`, `kamadak-exif`, `rusqlite`, `trash`, `rayon`, `tokio`)
+*   **Frontend:** React 19, TypeScript, Vite 6, Tailwind CSS
+*   **Package Manager:** `pnpm`
+*   **Legacy Archive:** The original Python Flask version is safely archived in `legacy_flask/`.
+
+---
+
+## Development & Build
 
 ### Prerequisites
+*   **Node.js** >= 18 (v20+ recommended)
+*   **pnpm** >= 9 (v10+ recommended)
+*   **Rust** >= 1.77 (`rustc` & `cargo`)
 
-*   Python 3.6+
-*   `pip` (Python package installer)
-
-### Installation
+### Quick Start
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/ID-VerNe/gallery-flask.git 
-    cd gallery-flask
+    git clone https://github.com/ID-VerNe/gallery-culling.git
+    cd gallery-culling
     ```
-2.  Create a Python virtual environment (recommended):
+2.  Install dependencies:
     ```bash
-    python -m venv .venv
+    pnpm install
     ```
-3.  Activate the virtual environment:
-    *   On Windows:
-        ```bash
-        .venv\Scripts\activate
-        ```
-    *   On macOS / Linux:
-        ```bash
-        source .venv/bin/activate
-        ```
-4.  Install the required Python packages:
+3.  Launch development environment:
     ```bash
-    pip install -r requirements.txt
+    pnpm tauri dev
     ```
-5.  Create the configuration file:
-    Copy the `.env` file template (if you have one) or manually create a `config/.env` file in the project root directory (`<project_directory>/config/`).
-    See the [Configuration](#configuration) section for details on `.env` content.
 
-## Configuration
-
-The application uses a `.env` file located in the `config/` directory at the project root for configuration.
-
-Create or edit `config/.env` with the following keys:
-
-```dotenv
-# Default folder paths - Application will load these if set
-DEFAULT_JPG_FOLDER=
-DEFAULT_RAW_FOLDER=
-
-# Cache directory name (relative to the application's executable/main script directory)
-CACHE_DIR_NAME=app_cache
-
-# Thumbnail size (width in pixels). Height is auto-calculated.
-THUMBNAIL_WIDTH=150
-
-# Path to Photoshop executable (optional).
-# If set and exists, used for opening RAW files matching supported extensions.
-# Example Windows: C:\Program Files\Adobe\Adobe Photoshop CC 2023\Photoshop.exe
-# Example macOS: /Applications/Adobe Photoshop CC 2023/Adobe Photoshop CC 2023.app/Contents/MacOS/Adobe Photoshop
-PHOTOSHOP_PATH=
-
-# Flask application host and port
-FLASK_RUN_HOST=127.0.0.1
-FLASK_RUN_PORT=5000
+### Release Build
+```bash
+pnpm tauri build
 ```
-Remember to fill in `DEFAULT_JPG_FOLDER`, `DEFAULT_RAW_FOLDER`, or `PHOTOSHOP_PATH` if you want to use default settings or specific RAW editors. The application will save successfully loaded paths back to this file.
+The compiled standalone executable and installer will be generated in `src-tauri/target/release/`.
 
-## How to Run
-
-1.  Ensure you are in the project root directory (`gallery-flask`).
-2.  Activate the virtual environment (if you used one):
-    *   On Windows: `.venv\Scripts\activate`
-    *   On macOS / Linux: `source .venv/bin/activate`
-3.  Run the main Python script:
-    ```bash
-    python main.py
-    ```
-    The Flask development server will start. You will see log output in your terminal.
-4.  Open your web browser and navigate to the address shown in the logs (usually `http://127.0.0.1:5000/`).
-
-Alternatively, on Windows, you can use the provided `start_app.cmd` script which activates the virtual environment and runs the application, then keeps the window open if an error occurred.
-
-## Usage
-
-1.  In the browser interface, either type the full paths to your JPG and RAW folders or click the "浏览..." (Browse...) buttons to use the native folder selection dialog.
-2.  Click the "加载图片对" (Load Image Pairs) button. The application will scan the folders and list matching pairs as thumbnails in the right-hand pane.
-3.  Click on a thumbnail to select the image pair. The large preview will show the JPG image, and the info label at the bottom will update.
-4.  Use "上一张" (Previous) and "下一张" (Next) buttons or the Left/Right arrow keys to navigate between selected images.
-5.  Use the mouse wheel to zoom in/out on the preview image. Click and drag (pan) the image when zoomed in.
-6.  Click "打开 RAW" (Open RAW) button or press the 'O' key to open the RAW file corresponding to the current selection using your system's default application or the configured Photoshop path.
-
-## File Structure
-
-```
-project_root/
-├── interface/           # Flask API routing and frontend files (HTML, CSS, JS)
-│   ├── api.py           # Flask Routes, integrates with lower layers, subprocess for Tkinter
-│   ├── static/          # Static frontend assets (CSS, JS, images)
-│   │   ├── css/
-│   │   ├── js/          # Modular JavaScript files
-│   │   └── assets/
-│   └── templates/       # HTML templates
-│       └── index.html   # Main UI HTML
-├── application/         # Application Layer - Manages app state and coordinates tasks
-│   └── image_selector_app.py
-├── domain/              # Domain/Infrastructure Layer - Handles file system, image processing, external calls
-│   └── file_manager.py
-├── utils/              # Utility Layer - Generic helpers (config loading, exceptions)
-│   ├── config_loader.py
-│   └── exceptions.py
-├── scripts/            # Helper scripts not part of main app (e.g., Tkinter dialog subprocess)
-│   └── folder_selector_dialog.py
-├── config/             # Configuration files
-│   └── .env             # Environment variables and settings
-├── main.py             # Application entry point
-├── requirements.txt    # Python dependencies
-├── start_app.cmd       # Windows launcher script
-└── README.md           # This file
-```
+---
 
 ## License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
-## Contributing
-
-Contributions are welcome! If you find a bug or think of a feature, please feel free to open an issue or submit a pull request.
