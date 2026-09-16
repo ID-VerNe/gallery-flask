@@ -21,6 +21,18 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportResult, setExportResult] = useState<string | null>(null);
 
+  // Close modal on Escape
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Filter groups according to policy
@@ -69,16 +81,25 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="batch-export-modal-title"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
+    >
       <div className="bg-[#181920] border border-[#2d303c] rounded-xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden text-gray-200 text-xs">
         {/* Modal Header */}
         <div className="h-12 border-b border-[#292c37] px-4 flex items-center justify-between bg-[#14151b]">
           <div className="flex items-center gap-2 font-semibold text-sm text-white">
-            <Download className="w-4 h-4 text-blue-400" />
-            <span>批量挑选导出 (Culling Export)</span>
+            <Download className="w-4 h-4 text-blue-400" aria-hidden="true" />
+            <h2 id="batch-export-modal-title">批量挑选导出 (Culling Export)</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded">
-            <X className="w-4 h-4" />
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white p-1 rounded hover:bg-[#252834] active:scale-[0.96] transition"
+            aria-label="关闭导出弹窗"
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -86,20 +107,24 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
         <div className="p-4 flex flex-col gap-4">
           {/* Target Folder */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-gray-300 font-medium">目标导出目录：</label>
+            <label htmlFor="export-target-folder" className="text-gray-300 font-medium cursor-pointer">
+              目标导出目录：
+            </label>
             <div className="flex items-center gap-2">
               <input
+                id="export-target-folder"
                 type="text"
                 value={targetFolder}
                 onChange={(e) => setTargetFolder(e.target.value)}
                 placeholder="请选择或粘贴保存挑选照片的文件夹..."
-                className="flex-1 bg-[#121316] border border-[#2d303c] rounded px-3 py-1.5 text-gray-200 outline-none font-mono text-[11px]"
+                className="flex-1 bg-[#121316] border border-[#2d303c] rounded-md px-3 py-1.5 text-gray-200 outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
               />
               <button
                 onClick={handleBrowseTarget}
-                className="px-3 py-1.5 bg-[#252834] hover:bg-[#323646] text-white rounded flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-[#252834] hover:bg-[#323646] active:scale-[0.96] text-white rounded-md flex items-center gap-1.5 transition-transform"
+                aria-label="浏览选择目标导出目录"
               >
-                <FolderOpen className="w-3.5 h-3.5" />
+                <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>浏览</span>
               </button>
             </div>
@@ -187,21 +212,21 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
         {/* Modal Footer */}
         <div className="h-12 border-t border-[#292c37] px-4 flex items-center justify-between bg-[#14151b]">
           <span className="text-gray-400">
-            预计导出: <b className="text-white">{exportCandidates.length}</b> 组照片
+            预计导出: <b className="text-white font-mono tabular-nums">{exportCandidates.length}</b> 组照片
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded bg-[#252834] hover:bg-[#323646] text-gray-300"
+              className="px-3.5 py-1.5 rounded-md bg-[#252834] hover:bg-[#323646] active:scale-[0.96] text-gray-300 transition-transform"
             >
-              关闭
+              取消
             </button>
             <button
               onClick={handleExport}
               disabled={isExporting || exportCandidates.length === 0 || !targetFolder.trim()}
-              className="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white font-medium flex items-center gap-1.5 transition"
+              className="px-4 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 active:scale-[0.96] disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium flex items-center gap-1.5 transition-transform"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{isExporting ? '导出中...' : '开始导出'}</span>
             </button>
           </div>

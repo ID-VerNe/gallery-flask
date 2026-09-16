@@ -205,7 +205,7 @@ export default function App() {
   });
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#121316] text-[#e1e4ea] overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-[#121316] text-[#e1e4ea] overflow-hidden">
       {/* Top Controls Bar */}
       <TopBar
         jpgFolder={jpgFolder}
@@ -241,6 +241,7 @@ export default function App() {
             onRate={(r) => handleRate(r)}
             onFlag={(f) => handleFlag(f)}
             onOpenExternal={handleOpenExternal}
+            onBrowseJpg={handleBrowseJpg}
           />
         )}
 

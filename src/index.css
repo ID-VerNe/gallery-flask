@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-[#121316] text-[#e1e4ea] antialiased overflow-hidden select-none;
+    @apply bg-[#121316] text-[#e1e4ea] antialiased overflow-hidden;
   }
 }
 
