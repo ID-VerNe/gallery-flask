@@ -6,7 +6,6 @@ import {
   Download,
   Columns2,
   Maximize2,
-  LayoutGrid,
   Settings,
   Sliders,
 } from 'lucide-react';
@@ -161,7 +160,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-[#20222c]'
             } active:scale-[0.96] transition`}
-            title="单图大图检视 (快捷键 G 切换)"
+            title="单图大图检视"
             aria-label="单图大图检视模式"
             aria-pressed={viewMode === 'single'}
           >
@@ -179,19 +178,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             aria-pressed={viewMode === 'split'}
           >
             <Columns2 className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
-          <button
-            onClick={() => onViewModeChange('grid')}
-            className={`p-1.5 rounded ${
-              viewMode === 'grid'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-[#20222c]'
-            } active:scale-[0.96] transition`}
-            title="纯网格全屏模式"
-            aria-label="纯网格全屏浏览模式"
-            aria-pressed={viewMode === 'grid'}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
 

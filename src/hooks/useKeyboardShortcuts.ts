@@ -7,9 +7,10 @@ interface KeyboardShortcutsProps {
   onFlag: (flag: 'pick' | 'reject' | 'none') => void;
   onOpenExternal: () => void;
   onToggleCompare: () => void;
-  onToggleGrid: () => void;
   onSwapCompare?: () => void;
   onTogglePinReference?: () => void;
+  onPinLeft?: () => void;
+  onPinRight?: () => void;
   onOpenMetadataModal?: () => void;
 }
 
@@ -20,9 +21,10 @@ export function useKeyboardShortcuts({
   onFlag,
   onOpenExternal,
   onToggleCompare,
-  onToggleGrid,
   onSwapCompare,
   onTogglePinReference,
+  onPinLeft,
+  onPinRight,
   onOpenMetadataModal,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
@@ -107,11 +109,6 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           onToggleCompare();
           break;
-        case 'g':
-        case 'G':
-          e.preventDefault();
-          onToggleGrid();
-          break;
 
         // Compare Swap (S)
         case 's':
@@ -128,6 +125,29 @@ export function useKeyboardShortcuts({
           if (onTogglePinReference) {
             e.preventDefault();
             onTogglePinReference();
+          }
+          break;
+
+        // Pin Left as Baseline ([)
+        case '[':
+          if (onPinLeft) {
+            e.preventDefault();
+            onPinLeft();
+          }
+          break;
+
+        // Pin Right as Baseline (]) or Space
+        case ']':
+          if (onPinRight) {
+            e.preventDefault();
+            onPinRight();
+          }
+          break;
+
+        case ' ':
+          if (onPinRight) {
+            e.preventDefault();
+            onPinRight();
           }
           break;
 
@@ -154,9 +174,10 @@ export function useKeyboardShortcuts({
     onFlag,
     onOpenExternal,
     onToggleCompare,
-    onToggleGrid,
     onSwapCompare,
     onTogglePinReference,
+    onPinLeft,
+    onPinRight,
     onOpenMetadataModal,
   ]);
 }

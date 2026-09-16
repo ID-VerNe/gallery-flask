@@ -1,159 +1,92 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Star, Check, X, FileEdit, LayoutGrid, Columns3, Columns4 } from 'lucide-react';
+import { Star, Check, X, Columns3, Columns4, Pin } from 'lucide-react';
 import { PhotoGroupInfo } from '../types';
 import { api } from '../services/api';
 
 interface ThumbnailGridProps {
   groups: PhotoGroupInfo[];
   selectedIndex: number;
+  pinnedId?: string | null;
   onSelect: (index: number) => void;
-  onDoubleClick?: (index: number) => void;
-  isSidebar?: boolean;
 }
 
 export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   groups,
   selectedIndex,
+  pinnedId,
   onSelect,
-  onDoubleClick,
-  isSidebar = false,
 }) => {
-  const [columns, setColumns] = useState<3 | 4>(4);
+  const [columns, setColumns] = useState<3 | 4>(3);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Group into rows for multi-column grid
+  // Split groups into rows for multi-column layout
   const rows = useMemo(() => {
-    if (isSidebar) return [];
     const res: PhotoGroupInfo[][] = [];
     for (let i = 0; i < groups.length; i += columns) {
       res.push(groups.slice(i, i + columns));
     }
     return res;
-  }, [groups, columns, isSidebar]);
+  }, [groups, columns]);
 
-  // Virtualizer for sidebar (1 photo per row)
-  const sidebarVirtualizer = useVirtualizer({
-    count: isSidebar ? groups.length : 0,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 105,
-    overscan: 5,
-  });
-
-  // Virtualizer for grid (3 or 4 photos per row)
+  // Virtualizer for multi-column rows
+  const rowHeight = columns === 3 ? 140 : 118;
   const gridVirtualizer = useVirtualizer({
-    count: !isSidebar ? rows.length : 0,
+    count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 290,
+    estimateSize: () => rowHeight,
     overscan: 4,
   });
 
   // Scroll active item into view
   useEffect(() => {
     if (selectedIndex >= 0 && selectedIndex < groups.length) {
-      if (isSidebar) {
-        sidebarVirtualizer.scrollToIndex(selectedIndex, {
-          align: 'auto',
-          behavior: 'auto',
-        });
-      } else {
-        const rowIndex = Math.floor(selectedIndex / columns);
-        gridVirtualizer.scrollToIndex(rowIndex, {
-          align: 'auto',
-          behavior: 'auto',
-        });
-      }
+      const rowIndex = Math.floor(selectedIndex / columns);
+      gridVirtualizer.scrollToIndex(rowIndex, {
+        align: 'auto',
+        behavior: 'auto',
+      });
     }
-  }, [selectedIndex, isSidebar, columns, groups.length, sidebarVirtualizer, gridVirtualizer]);
+  }, [selectedIndex, columns, groups.length, gridVirtualizer]);
 
-  if (isSidebar) {
-    return (
-      <div
-        ref={parentRef}
-        className="h-full w-full overflow-y-auto bg-[#14151a] p-2 select-none border-l border-[#242731]"
-      >
-        <div
-          style={{
-            height: `${sidebarVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {sidebarVirtualizer.getVirtualItems().map((virtualRow) => {
-            const group = groups[virtualRow.index];
-            const isSelected = virtualRow.index === selectedIndex;
-
-            return (
-              <div
-                key={group.id}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-                className="px-1 py-1"
-              >
-                <ThumbnailCard
-                  group={group}
-                  index={virtualRow.index}
-                  isSelected={isSelected}
-                  onSelect={() => onSelect(virtualRow.index)}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // Multi-column Grid View (3 or 4 columns)
   return (
-    <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-[#0e0f13] select-none">
-      {/* Top Grid Sub-toolbar */}
-      <div className="h-9 shrink-0 bg-[#16171e] border-b border-[#242733] flex items-center justify-between px-4 text-xs text-gray-300">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="w-4 h-4 text-blue-400" />
-          <span className="font-medium">缩略图多列宫格</span>
-          <span className="text-[11px] text-gray-500">
-            共 {groups.length} 张照片 (双击单张进入预览)
-          </span>
-        </div>
+    <div className="h-full w-full flex flex-col bg-[#14151a] border-l border-[#242731] select-none">
+      {/* Top Header & Column Switcher */}
+      <div className="h-9 px-2.5 bg-[#171821] border-b border-[#242731] flex items-center justify-between text-xs text-gray-300 shrink-0">
+        <span className="font-medium text-[11px] text-gray-300 font-mono">
+          宫格列表 ({groups.length})
+        </span>
 
-        {/* Column Switcher (3 or 4) */}
-        <div className="flex items-center gap-1 bg-[#101116] p-0.5 rounded-lg border border-[#272a38]">
+        <div className="flex items-center gap-1 bg-[#101116] p-0.5 rounded-lg border border-[#282b3a]">
           <button
             onClick={() => setColumns(3)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs transition ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition ${
               columns === 3
                 ? 'bg-blue-600 text-white font-medium shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                : 'text-gray-400 hover:text-white'
             }`}
-            title="一行显示 3 张大缩略图"
+            title="一行 3 张缩略图"
           >
-            <Columns3 className="w-3.5 h-3.5" />
-            <span>3 列宫格</span>
+            <Columns3 className="w-3 h-3" />
+            <span>3列</span>
           </button>
           <button
             onClick={() => setColumns(4)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs transition ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition ${
               columns === 4
                 ? 'bg-blue-600 text-white font-medium shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                : 'text-gray-400 hover:text-white'
             }`}
-            title="一行显示 4 张缩略图"
+            title="一行 4 张缩略图"
           >
-            <Columns4 className="w-3.5 h-3.5" />
-            <span>4 列宫格</span>
+            <Columns4 className="w-3 h-3" />
+            <span>4列</span>
           </button>
         </div>
       </div>
 
-      {/* Virtualized Grid Body */}
-      <div ref={parentRef} className="flex-1 overflow-y-auto p-3">
+      {/* Virtualized Grid List */}
+      <div ref={parentRef} className="flex-1 overflow-y-auto p-2">
         <div
           style={{
             height: `${gridVirtualizer.getTotalSize()}px`,
@@ -175,22 +108,24 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className={`grid gap-3 pb-3 ${
+                className={`grid gap-1.5 pb-1.5 ${
                   columns === 3 ? 'grid-cols-3' : 'grid-cols-4'
                 }`}
               >
                 {rowGroups.map((group, colIdx) => {
                   const itemIndex = virtualRow.index * columns + colIdx;
                   const isSelected = itemIndex === selectedIndex;
+                  const isPinned = pinnedId === group.id;
 
                   return (
-                    <GridPhotoCard
+                    <GridPhotoCell
                       key={group.id}
                       group={group}
                       index={itemIndex}
+                      columns={columns}
                       isSelected={isSelected}
+                      isPinned={isPinned}
                       onSelect={() => onSelect(itemIndex)}
-                      onDoubleClick={() => onDoubleClick?.(itemIndex)}
                     />
                   );
                 })}
@@ -203,17 +138,21 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   );
 };
 
-interface ThumbnailCardProps {
+interface GridPhotoCellProps {
   group: PhotoGroupInfo;
   index: number;
+  columns: 3 | 4;
   isSelected: boolean;
+  isPinned: boolean;
   onSelect: () => void;
 }
 
-const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
+const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
   group,
   index,
+  columns,
   isSelected,
+  isPinned,
   onSelect,
 }) => {
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
@@ -233,19 +172,18 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
     };
   }, [group.jpg?.path, group.raw?.path]);
 
-  const flagColor =
+  const flagBorder =
     group.flag === 'pick'
       ? 'border-emerald-500/70 bg-emerald-950/20'
       : group.flag === 'reject'
-      ? 'border-rose-500/50 bg-rose-950/20'
-      : 'border-[#262935]';
+      ? 'border-rose-500/60 bg-rose-950/20'
+      : 'border-[#262936]';
 
   return (
     <div
       role="button"
       tabIndex={0}
       aria-selected={isSelected}
-      aria-label={`照片 ${group.baseName}, 序号 ${index + 1}${group.rating > 0 ? `, ${group.rating} 星` : ''}${group.flag === 'pick' ? ', 已保留' : group.flag === 'reject' ? ', 已淘汰' : ''}`}
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -253,14 +191,17 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
           onSelect();
         }
       }}
-      className={`h-full w-full rounded-lg flex items-center gap-2.5 px-2.5 py-2 cursor-pointer transition-[background-color,border-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 border text-left ${
-        isSelected
-          ? 'bg-[#222531] border-blue-500 shadow-md ring-1 ring-blue-500/50'
-          : `bg-[#191a21] hover:bg-[#20222c] ${flagColor}`
+      className={`relative rounded-lg flex flex-col overflow-hidden cursor-pointer transition-[border-color,box-shadow,transform] border text-left bg-[#181922] hover:bg-[#20222e] ${
+        isPinned
+          ? 'border-amber-400 ring-2 ring-amber-400/60 shadow-lg'
+          : isSelected
+          ? 'border-blue-500 ring-2 ring-blue-500/60 shadow-md'
+          : `hover:border-[#3a3e52] ${flagBorder}`
       }`}
+      style={{ height: columns === 3 ? '132px' : '110px' }}
     >
-      {/* Thumbnail Image with Depth Ring */}
-      <div className="relative w-20 h-20 shrink-0 bg-[#0d0e12] rounded-md ring-1 ring-white/10 overflow-hidden flex items-center justify-center">
+      {/* Thumbnail Container */}
+      <div className="relative flex-1 bg-[#0a0b0e] overflow-hidden flex items-center justify-center p-0.5">
         {thumbSrc ? (
           <img
             src={thumbSrc}
@@ -270,221 +211,54 @@ const ThumbnailCard: React.FC<ThumbnailCardProps> = ({
             loading="lazy"
           />
         ) : (
-          <div className="text-[11px] text-gray-500 font-mono">加载中...</div>
+          <div className="text-[10px] text-gray-500 font-mono">加载中</div>
         )}
 
-        {/* Flag Icon overlay */}
-        {group.flag === 'pick' && (
-          <div className="absolute top-1 left-1 bg-emerald-600 text-white rounded p-0.5 shadow">
-            <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" />
-          </div>
-        )}
-        {group.flag === 'reject' && (
-          <div className="absolute top-1 left-1 bg-rose-600 text-white rounded p-0.5 shadow">
-            <X className="w-3 h-3 stroke-[3]" aria-hidden="true" />
-          </div>
-        )}
-
-        {/* Rating Stars badge */}
-        {group.rating > 0 && (
-          <div className="absolute bottom-0.5 right-0.5 bg-black/85 backdrop-blur px-1.5 py-0.5 rounded flex items-center text-[11px] text-amber-300 font-bold gap-0.5 tabular-nums">
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" aria-hidden="true" />
-            <span>{group.rating}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Info labels */}
-      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full">
-        <div>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-mono font-medium text-gray-200 truncate" title={group.baseName}>
-              {group.baseName}
-            </span>
-            <span className="text-[11px] text-gray-400 shrink-0 font-mono tabular-nums">#{index + 1}</span>
-          </div>
-
-          {/* Badges */}
-          <div className="flex items-center gap-1.5 mt-1.5">
-            {group.raw && (
-              <span className="px-1.5 py-0.5 bg-blue-900/60 text-blue-300 text-[10px] font-mono rounded">
-                {group.raw.extension.toUpperCase()}
-              </span>
-            )}
-            {group.hasXmp && (
-              <span
-                className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-900/50 text-amber-300 text-[10px] rounded"
-                title="已编辑 (存在 XMP/ACR)"
-              >
-                <FileEdit className="w-2.5 h-2.5" aria-hidden="true" />
-                <span>XMP</span>
-              </span>
-            )}
-            {group.flag === 'reject' && (
-              <span className="px-1.5 py-0.5 bg-rose-950/80 text-rose-300 text-[10px] rounded font-medium">
-                淘汰
-              </span>
-            )}
-            {group.flag === 'pick' && (
-              <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 text-[10px] rounded font-medium">
-                保留
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Shutter / Aperture / ISO preview */}
-        {group.exif && (
-          <div className="text-[11px] text-gray-400 truncate font-mono tabular-nums">
-            {[group.exif.aperture, group.exif.shutterSpeed, group.exif.iso ? `ISO${group.exif.iso}` : null]
-              .filter(Boolean)
-              .join(' ')}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface GridPhotoCardProps {
-  group: PhotoGroupInfo;
-  index: number;
-  isSelected: boolean;
-  onSelect: () => void;
-  onDoubleClick?: () => void;
-}
-
-const GridPhotoCard: React.FC<GridPhotoCardProps> = ({
-  group,
-  index,
-  isSelected,
-  onSelect,
-  onDoubleClick,
-}) => {
-  const [thumbSrc, setThumbSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const targetPath = group.jpg?.path || group.raw?.path;
-    if (targetPath) {
-      // High resolution thumbnail for multi-column grid
-      api.getThumbnail(targetPath, 400).then((url) => {
-        if (active) {
-          setThumbSrc(url);
-        }
-      });
-    }
-    return () => {
-      active = false;
-    };
-  }, [group.jpg?.path, group.raw?.path]);
-
-  const flagColor =
-    group.flag === 'pick'
-      ? 'border-emerald-500/70 bg-emerald-950/15'
-      : group.flag === 'reject'
-      ? 'border-rose-500/50 bg-rose-950/15'
-      : 'border-[#262935]';
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-selected={isSelected}
-      onClick={onSelect}
-      onDoubleClick={onDoubleClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className={`h-[280px] rounded-xl flex flex-col overflow-hidden cursor-pointer transition-[background-color,border-color,box-shadow,transform] border text-left bg-[#171821] hover:bg-[#1d1f2a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${flagColor} ${
-        isSelected
-          ? 'border-blue-500 shadow-xl ring-2 ring-blue-500/60 scale-[1.01]'
-          : 'hover:border-[#383c4e]'
-      }`}
-    >
-      {/* Upper Large Thumbnail Container */}
-      <div className="relative flex-1 bg-[#090a0d] overflow-hidden flex items-center justify-center p-1.5">
-        {thumbSrc ? (
-          <img
-            src={thumbSrc}
-            alt={group.baseName}
-            style={{ imageOrientation: 'from-image' }}
-            className="w-full h-full object-contain pointer-events-none"
-            loading="lazy"
-          />
-        ) : (
-          <div className="text-xs text-gray-500 font-mono">加载缩略图中...</div>
-        )}
-
-        {/* Index badge */}
-        <div className="absolute top-2 right-2 bg-black/75 backdrop-blur px-1.5 py-0.5 rounded text-[10px] font-mono text-gray-300 tabular-nums">
+        {/* Top-Right Index */}
+        <div className="absolute top-1 right-1 bg-black/75 backdrop-blur px-1 py-0.2 rounded text-[9px] font-mono text-gray-300 tabular-nums">
           #{index + 1}
         </div>
 
-        {/* Pick / Reject Badge */}
-        {group.flag === 'pick' && (
-          <div className="absolute top-2 left-2 bg-emerald-600 text-white rounded-md px-1.5 py-0.5 shadow flex items-center gap-1 text-[11px] font-medium">
-            <Check className="w-3 h-3 stroke-[3]" />
-            <span>保留</span>
+        {/* Top-Left: Pick/Reject Badge or Pinned Reference */}
+        {isPinned ? (
+          <div className="absolute top-1 left-1 bg-amber-500 text-black rounded px-1 py-0.2 shadow flex items-center gap-0.5 text-[9px] font-bold">
+            <Pin className="w-2.5 h-2.5 fill-black" />
+            <span>基准</span>
           </div>
-        )}
-        {group.flag === 'reject' && (
-          <div className="absolute top-2 left-2 bg-rose-600 text-white rounded-md px-1.5 py-0.5 shadow flex items-center gap-1 text-[11px] font-medium">
-            <X className="w-3 h-3 stroke-[3]" />
-            <span>淘汰</span>
+        ) : group.flag === 'pick' ? (
+          <div className="absolute top-1 left-1 bg-emerald-600 text-white rounded p-0.5 shadow">
+            <Check className="w-2.5 h-2.5 stroke-[3]" />
           </div>
-        )}
+        ) : group.flag === 'reject' ? (
+          <div className="absolute top-1 left-1 bg-rose-600 text-white rounded p-0.5 shadow">
+            <X className="w-2.5 h-2.5 stroke-[3]" />
+          </div>
+        ) : null}
 
-        {/* Rating Stars badge */}
+        {/* Bottom-Right Rating */}
         {group.rating > 0 && (
-          <div className="absolute bottom-2 right-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-md flex items-center text-xs text-amber-300 font-bold gap-1 tabular-nums border border-white/10">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+          <div className="absolute bottom-1 right-1 bg-black/85 backdrop-blur px-1 py-0.2 rounded flex items-center text-[10px] text-amber-300 font-bold gap-0.5 tabular-nums border border-white/10">
+            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
             <span>{group.rating}</span>
           </div>
         )}
       </div>
 
-      {/* Lower Meta Bar */}
-      <div className="p-2.5 bg-[#14151c] border-t border-[#232532] flex flex-col justify-between shrink-0 h-[72px]">
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-xs font-mono font-medium text-gray-100 truncate" title={group.baseName}>
-            {group.baseName}
-          </span>
-          <div className="flex items-center gap-1 shrink-0">
-            {group.raw && (
-              <span className="px-1.5 py-0.2 bg-blue-900/60 text-blue-300 text-[10px] font-mono rounded">
-                {group.raw.extension.toUpperCase()}
-              </span>
-            )}
-            {group.hasXmp && (
-              <span
-                className="flex items-center gap-0.5 px-1 py-0.2 bg-amber-900/50 text-amber-300 text-[10px] rounded"
-                title="已同步 XMP 侧边栏"
-              >
-                <FileEdit className="w-2.5 h-2.5" />
-                <span>XMP</span>
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Lens / Camera / EXIF */}
-        <div className="text-[11px] text-gray-400 truncate font-mono tabular-nums flex items-center justify-between">
-          <span className="truncate text-gray-300">
-            {group.exif?.lensModel || group.exif?.cameraModel || '未录入镜头信息'}
-          </span>
-          {group.exif && (
-            <span className="shrink-0 text-gray-400 ml-1">
-              {[group.exif.focalLength, group.exif.aperture, group.exif.shutterSpeed, group.exif.iso ? `ISO${group.exif.iso}` : null]
-                .filter(Boolean)
-                .join(' ')}
-            </span>
+      {/* Bottom Minimal File Stem & Badges */}
+      <div className="px-1.5 py-1 bg-[#13141a] border-t border-[#232532] flex items-center justify-between text-[10px] font-mono shrink-0">
+        <span className="text-gray-300 truncate max-w-[70%]" title={group.baseName}>
+          {group.baseName}
+        </span>
+        <div className="flex items-center gap-0.5">
+          {group.raw && (
+            <span className="text-[9px] text-blue-400 font-bold">R</span>
+          )}
+          {group.hasXmp && (
+            <span className="text-[9px] text-amber-400 font-bold" title="包含 XMP">X</span>
           )}
         </div>
       </div>
     </div>
   );
 };
+

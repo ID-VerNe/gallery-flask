@@ -291,10 +291,6 @@ export default function App() {
     setViewMode((m) => (m === 'split' ? 'single' : 'split'));
   }, []);
 
-  const handleToggleGrid = useCallback(() => {
-    setViewMode((m) => (m === 'grid' ? 'single' : 'grid'));
-  }, []);
-
   // Save session when index changes
   useEffect(() => {
     if (jpgFolder && selectedIndex >= 0) {
@@ -334,9 +330,10 @@ export default function App() {
     onFlag: (f) => handleFlag(f),
     onOpenExternal: handleOpenExternal,
     onToggleCompare: handleToggleCompare,
-    onToggleGrid: handleToggleGrid,
     onSwapCompare: handleSwapCompare,
     onTogglePinReference: handleTogglePinBenchmark,
+    onPinLeft: handleTogglePinLeft,
+    onPinRight: handleTogglePinRight,
     onOpenMetadataModal: () => setIsMetadataOpen(true),
   });
 
@@ -401,33 +398,15 @@ export default function App() {
             }}
           />
         )}
-
-        {viewMode === 'grid' && (
-          <div className="flex-1 h-full w-full overflow-hidden">
-            <ThumbnailGrid
-              groups={filteredGroups}
-              selectedIndex={selectedIndex}
-              onSelect={handleSelectPhoto}
-              onDoubleClick={(idx) => {
-                setSelectedIndex(idx);
-                setViewMode('single');
-              }}
-              isSidebar={false}
-            />
-          </div>
-        )}
-
-        {/* Right Thumbnail Sidebar (shown in single and split modes) */}
-        {viewMode !== 'grid' && (
-          <div className="w-80 h-full shrink-0">
-            <ThumbnailGrid
-              groups={filteredGroups}
-              selectedIndex={selectedIndex}
-              onSelect={handleSelectPhoto}
-              isSidebar={true}
-            />
-          </div>
-        )}
+        {/* Right Thumbnail Sidebar (Multi-column Compact Grid: 3-4 cols) */}
+        <div className="w-[390px] h-full shrink-0">
+          <ThumbnailGrid
+            groups={filteredGroups}
+            selectedIndex={selectedIndex}
+            pinnedId={pinnedId}
+            onSelect={handleSelectPhoto}
+          />
+        </div>
       </div>
 
       {/* Bottom Status Bar */}

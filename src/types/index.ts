@@ -19,7 +19,7 @@ export interface ExifData {
 }
 
 export type CullFlag = 'none' | 'pick' | 'reject';
-export type ViewMode = 'single' | 'split' | 'grid';
+export type ViewMode = 'single' | 'split';
 export type SortOrder = 'time_filename' | 'filename' | 'rating';
 export type FilterMode = 'all' | 'pick' | 'reject' | 'unmarked' | 'star1' | 'star2' | 'star3' | 'star4' | 'star5';
 

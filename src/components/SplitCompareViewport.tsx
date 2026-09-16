@@ -32,9 +32,13 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
 }) => {
   const [syncZoom, setSyncZoom] = useState(true);
   const [leftScale, setLeftScale] = useState(1);
-  const [leftPos] = useState({ x: 0, y: 0 });
+  const [leftPos, setLeftPos] = useState({ x: 0, y: 0 });
   const [rightScale, setRightScale] = useState(1);
-  const [rightPos] = useState({ x: 0, y: 0 });
+  const [rightPos, setRightPos] = useState({ x: 0, y: 0 });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [activePane, setActivePane] = useState<'left' | 'right' | null>(null);
 
   const handleWheel = (isLeft: boolean, e: React.WheelEvent) => {
     e.preventDefault();
@@ -49,6 +53,55 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
       setLeftScale((s) => Math.min(Math.max(s * delta, 0.2), 10));
     } else {
       setRightScale((s) => Math.min(Math.max(s * delta, 0.2), 10));
+    }
+  };
+
+  // Left-click mouse drag pan
+  const handleMouseDown = (isLeft: boolean, e: React.MouseEvent) => {
+    if (e.button === 0) {
+      setIsDragging(true);
+      setActivePane(isLeft ? 'left' : 'right');
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !activePane) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    setDragStart({ x: e.clientX, y: e.clientY });
+
+    if (syncZoom) {
+      // Synchronously pan both viewports
+      setLeftPos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      setRightPos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    } else if (activePane === 'left') {
+      setLeftPos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    } else {
+      setRightPos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setActivePane(null);
+  };
+
+  // Double click to toggle 100% (2.5x) / Fit (1.0x) and center
+  const handleDoubleClick = (isLeft: boolean) => {
+    const currentScale = isLeft ? leftScale : rightScale;
+    const targetScale = currentScale === 1 ? 2.5 : 1;
+    if (syncZoom) {
+      setLeftScale(targetScale);
+      setRightScale(targetScale);
+      setLeftPos({ x: 0, y: 0 });
+      setRightPos({ x: 0, y: 0 });
+    } else if (isLeft) {
+      setLeftScale(targetScale);
+      setLeftPos({ x: 0, y: 0 });
+    } else {
+      setRightScale(targetScale);
+      setRightPos({ x: 0, y: 0 });
     }
   };
 
@@ -75,28 +128,35 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
 
     const isPinned = isLeft ? isLeftPinned : isRightPinned;
     const onTogglePin = isLeft ? onTogglePinLeft : onTogglePinRight;
+    const shortcutHint = isLeft ? '[ 或 B' : '] 或 空格';
 
     return (
       <div
         onClick={onSelect}
         onWheel={(e) => handleWheel(isLeft, e)}
-        className={`relative flex-1 bg-[#0c0d10] overflow-hidden flex items-center justify-center border-r border-[#20222a] last:border-r-0 cursor-crosshair ${
-          isPinned ? 'ring-2 ring-inset ring-amber-500/40' : ''
-        }`}
+        onMouseDown={(e) => handleMouseDown(isLeft, e)}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onDoubleClick={() => handleDoubleClick(isLeft)}
+        className={`relative flex-1 bg-[#0c0d10] overflow-hidden flex items-center justify-center border-r border-[#20222a] last:border-r-0 select-none ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        } ${isPinned ? 'ring-2 ring-inset ring-amber-500/40' : ''}`}
       >
         <img
           src={src}
           alt={group.baseName}
+          draggable={false}
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-            transition: 'transform 0.05s ease-out',
+            transition: isDragging ? 'none' : 'transform 0.05s ease-out',
             imageOrientation: 'from-image',
           }}
           className="max-h-full max-w-full object-contain pointer-events-none origin-center"
         />
 
         {/* Top title, Reference status & Pin button */}
-        <div className="absolute top-3 left-3 flex items-center gap-2 select-none">
+        <div className="absolute top-3 left-3 flex items-center gap-2 select-none pointer-events-auto">
           <div className="bg-black/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-white flex items-center gap-2 border border-white/10 select-text shadow-lg">
             <span className="font-mono font-medium">{group.baseName}</span>
             {group.exif && (
@@ -119,17 +179,17 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
                 ? 'bg-amber-500 text-black font-semibold ring-1 ring-amber-400'
                 : 'bg-black/80 hover:bg-white/10 text-gray-300 hover:text-white border border-white/15'
             }`}
-            title={isPinned ? '已锁定为对比基准图 (按 P 取消)' : '点击锁定为固定对比基准 (按 P 快捷键)'}
+            title={isPinned ? `已锁定为基准 (按 B 或对应键取消)` : `点击锁定为固定对比基准 (快捷键: ${shortcutHint})`}
           >
             <Pin className={`w-3.5 h-3.5 ${isPinned ? 'fill-black' : ''}`} />
-            <span>{isPinned ? '基准参考 (固定)' : '设为基准'}</span>
+            <span>{isPinned ? '基准参考 (固定)' : `设为基准 (${shortcutHint})`}</span>
           </button>
         </div>
 
         {/* Bottom ratings */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-3 bg-black/80 backdrop-blur px-3.5 py-1.5 rounded-full flex items-center gap-2.5 border border-white/15 shadow-xl"
+          className="absolute bottom-3 bg-black/80 backdrop-blur px-3.5 py-1.5 rounded-full flex items-center gap-2.5 border border-white/15 shadow-xl pointer-events-auto"
           role="group"
           aria-label={`为照片 ${group.baseName} 打分和标记`}
         >
@@ -213,6 +273,20 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             <span>左右互换 (S)</span>
           </button>
 
+          {/* Reset View button */}
+          <button
+            onClick={() => {
+              setLeftScale(1);
+              setRightScale(1);
+              setLeftPos({ x: 0, y: 0 });
+              setRightPos({ x: 0, y: 0 });
+            }}
+            className="px-2 py-1 bg-[#222530] hover:bg-[#2b2f3d] text-gray-300 hover:text-white rounded text-[11px] transition"
+            title="复位缩放与平移 (亦可直接双击照片)"
+          >
+            复位
+          </button>
+
           {/* Sync Zoom toggle */}
           <button
             onClick={() => setSyncZoom(!syncZoom)}
@@ -226,7 +300,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             aria-pressed={syncZoom}
           >
             {syncZoom ? <Link className="w-3 h-3" aria-hidden="true" /> : <Unlink className="w-3 h-3" aria-hidden="true" />}
-            <span>{syncZoom ? '联动缩放已开启' : '独立缩放'}</span>
+            <span>{syncZoom ? '联动同步开启' : '独立缩放'}</span>
           </button>
         </div>
       </div>
