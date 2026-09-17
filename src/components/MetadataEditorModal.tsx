@@ -111,10 +111,10 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A0A0A]/75 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-      <div className="bg-[#181920] border border-[#2e313d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-background-base/75 backdrop-blur-sm flex items-center justify-center p-4 select-none">
+      <div className="bg-background-panel border border-border-default rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#1d1f27]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-background-panel">
           <div className="flex items-center gap-2">
             <Sliders className="w-5 h-5 text-white" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-gray-100">
@@ -144,7 +144,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                   key={preset.name}
                   type="button"
                   onClick={() => handleApplyPreset(preset)}
-                  className="px-2.5 py-1 bg-[#232530] hover:bg-[#2e3242] border border-[#333747] text-white/80 rounded-md text-[11px] transition text-left"
+                  className="px-2.5 py-1 bg-button hover:bg-button-hover border border-border-strong text-white/80 rounded-md text-[11px] transition text-left"
                 >
                   {preset.name}
                 </button>
@@ -153,7 +153,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
           </div>
 
           {/* Form fields */}
-          <div className="space-y-3.5 bg-[#121318] p-4 rounded-xl border border-[#272a36]">
+          <div className="space-y-3.5 bg-background-header p-4 rounded-xl border border-border-default">
             <div>
               <label className="block text-white/80 font-medium mb-1">
                 镜头型号 (Lens Model)
@@ -163,7 +163,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 value={lensModel}
                 onChange={(e) => setLensModel(e.target.value)}
                 placeholder="例如: Voigtlander APO-LANTHAR 50mm F2"
-                className="w-full bg-[#1c1e26] border border-[#313545] rounded-lg px-3 py-2 text-white font-mono placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs"
+                className="w-full bg-background-input border border-border-strong rounded-lg px-3 py-2 text-white font-mono placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs"
               />
             </div>
 
@@ -177,7 +177,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                   value={focalLength}
                   onChange={(e) => setFocalLength(e.target.value)}
                   placeholder="例如: 50mm 或 35mm"
-                  className="w-full bg-[#1c1e26] border border-[#313545] rounded-lg px-3 py-2 text-white font-mono placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs"
+                  className="w-full bg-background-input border border-border-strong rounded-lg px-3 py-2 text-white font-mono placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs"
                 />
               </div>
               <div>
@@ -189,7 +189,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                   value={aperture}
                   onChange={(e) => setAperture(e.target.value)}
                   placeholder="例如: f/2.0 或 f/1.4"
-                  className="w-full bg-[#1c1e26] border border-[#313545] rounded-lg px-3 py-2 text-white font-mono placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs"
+                  className="w-full bg-background-input border border-border-strong rounded-lg px-3 py-2 text-white font-mono placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs"
                 />
               </div>
             </div>
@@ -207,7 +207,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   syncScope === 'current'
                     ? 'border-blue-500 bg-blue-950/40 text-white font-medium'
-                    : 'border-[#2d303e] bg-[#1c1d25] text-white/60 hover:text-white'
+                    : 'border-border-default bg-background-panel text-white/60 hover:text-white'
                 }`}
               >
                 <span>仅当前选中照片</span>
@@ -220,7 +220,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   syncScope === 'filtered'
                     ? 'border-blue-500 bg-blue-950/40 text-white font-medium'
-                    : 'border-[#2d303e] bg-[#1c1d25] text-white/60 hover:text-white'
+                    : 'border-border-default bg-background-panel text-white/60 hover:text-white'
                 }`}
               >
                 <span>当前筛选集</span>
@@ -233,7 +233,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   syncScope === 'all'
                     ? 'border-blue-500 bg-blue-950/40 text-white font-medium'
-                    : 'border-[#2d303e] bg-[#1c1d25] text-white/60 hover:text-white'
+                    : 'border-border-default bg-background-panel text-white/60 hover:text-white'
                 }`}
               >
                 <span>全部扫描照片</span>
@@ -257,7 +257,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/10 bg-[#1d1f27]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/10 bg-background-panel">
           <span className="text-white/60 text-xs">
             将更新 <strong className="text-white font-mono">{targetGroups.length}</strong> 张照片
           </span>

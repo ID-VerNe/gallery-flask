@@ -50,14 +50,14 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   }, [selectedIndex, columns, groups.length, gridVirtualizer]);
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#0A0A0A] border-l border-white/10 select-none">
+    <div className="h-full w-full flex flex-col bg-background-base border-l border-white/10 select-none">
       {/* Top Header & Column Switcher */}
-      <div className="h-9 px-2.5 bg-[#0A0A0A] border-b border-white/10 flex items-center justify-between text-xs text-white/80 shrink-0">
+      <div className="h-9 px-2.5 bg-background-base border-b border-white/10 flex items-center justify-between text-xs text-white/80 shrink-0">
         <span className="font-medium text-[11px] text-white/80 font-mono">
           宫格列表 ({groups.length})
         </span>
 
-        <div className="flex items-center gap-1 bg-[#0A0A0A] p-0.5 rounded-lg border border-white/10">
+        <div className="flex items-center gap-1 bg-background-base p-0.5 rounded-lg border border-white/10">
           <button
             onClick={() => setColumns(3)}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition ${
@@ -174,9 +174,9 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
 
   const flagBorder =
     group.flag === 'pick'
-      ? 'border-emerald-500/70 bg-emerald-950/20'
+      ? 'border-emerald-500/40'
       : group.flag === 'reject'
-      ? 'border-rose-500/60 bg-rose-950/20'
+      ? 'border-rose-500/40'
       : 'border-white/10';
 
   return (
@@ -191,17 +191,17 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
           onSelect();
         }
       }}
-      className={`relative rounded-lg flex flex-col overflow-hidden cursor-pointer transition-[border-color,box-shadow,transform] border text-left bg-white/5 hover:bg-white/5 ${
+      className={`relative rounded-lg flex flex-col overflow-hidden cursor-pointer transition-[border-color,transform] border text-left bg-white/5 hover:bg-white/10 ${
         isPinned
-          ? 'border-amber-400 ring-2 ring-inset ring-amber-400/60 shadow-lg'
+          ? 'border-white/90 ring-1 ring-inset ring-white/90'
           : isSelected
-          ? 'border-sky-500 ring-2 ring-inset ring-sky-500/60 shadow-md'
-          : `hover:border-white/20 ${flagBorder}`
+          ? 'border-white/60 ring-1 ring-inset ring-white/60'
+          : `hover:border-white/30 ${flagBorder}`
       }`}
       style={{ height: columns === 3 ? '132px' : '110px' }}
     >
       {/* Thumbnail Container */}
-      <div className="relative flex-1 bg-[#0A0A0A] overflow-hidden flex items-center justify-center p-0.5">
+      <div className="relative flex-1 bg-background-base overflow-hidden flex items-center justify-center p-0.5">
         {thumbSrc ? (
           <img
             src={thumbSrc}
@@ -215,29 +215,29 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
         )}
 
         {/* Top-Right Index */}
-        <div className="absolute top-1 right-1 bg-[#0A0A0A]/75 backdrop-blur px-1 py-0.2 rounded text-[9px] font-mono text-white/80 tabular-nums">
+        <div className="absolute top-1 right-1 bg-background-base/75 backdrop-blur px-1 py-0.2 rounded text-[9px] font-mono text-white/80 tabular-nums">
           #{index + 1}
         </div>
 
         {/* Top-Left: Pick/Reject Badge or Pinned Reference */}
         {isPinned ? (
-          <div className="absolute top-1 left-1 bg-amber-500 text-black rounded px-1 py-0.2 shadow flex items-center gap-0.5 text-[9px] font-medium">
+          <div className="absolute top-1 left-1 bg-white text-black rounded px-1 py-0.2 flex items-center gap-0.5 text-[9px] font-medium">
             <Pin className="w-2.5 h-2.5 fill-black" />
             <span>基准</span>
           </div>
         ) : group.flag === 'pick' ? (
-          <div className="absolute top-1 left-1 bg-emerald-600 text-white rounded p-0.5 shadow">
+          <div className="absolute top-1 left-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 rounded p-0.5">
             <Check className="w-2.5 h-2.5 stroke-[3]" />
           </div>
         ) : group.flag === 'reject' ? (
-          <div className="absolute top-1 left-1 bg-rose-600 text-white rounded p-0.5 shadow">
+          <div className="absolute top-1 left-1 bg-rose-500/15 border border-rose-500/30 text-rose-500 rounded p-0.5">
             <X className="w-2.5 h-2.5 stroke-[3]" />
           </div>
         ) : null}
 
         {/* Bottom-Right Rating */}
         {group.rating > 0 && (
-          <div className="absolute bottom-1 right-1 bg-[#0A0A0A]/85 backdrop-blur px-1 py-0.2 rounded flex items-center text-[10px] text-amber-300 font-medium gap-0.5 tabular-nums border border-white/10">
+          <div className="absolute bottom-1 right-1 bg-background-base/85 backdrop-blur px-1 py-0.2 rounded flex items-center text-[10px] text-amber-300 font-medium gap-0.5 tabular-nums border border-white/10">
             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
             <span>{group.rating}</span>
           </div>
@@ -245,7 +245,7 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
       </div>
 
       {/* Bottom Minimal File Stem & Badges */}
-      <div className="px-1.5 py-1 bg-[#0A0A0A] border-t border-white/10 flex items-center justify-between text-[10px] font-mono shrink-0">
+      <div className="px-1.5 py-1 bg-background-base border-t border-white/10 flex items-center justify-between text-[10px] font-mono shrink-0">
         <span className="text-white/80 truncate max-w-[70%]" title={group.baseName}>
           {group.baseName}
         </span>

@@ -1,0 +1,25 @@
+@layer base {
+  :root {
+    /* Backgrounds */
+    --color-bg-base: #0A0A0A;
+    --color-bg-surface: rgb(255 255 255 / 2%);
+    --color-bg-surface-hover: rgb(255 255 255 / 5%);
+    --color-bg-header: rgb(255 255 255 / 3%);
+    --color-bg-panel: rgb(255 255 255 / 6%);
+    --color-bg-input: rgb(255 255 255 / 8%);
+    
+    /* Borders */
+    --color-border-subtle: rgb(255 255 255 / 6%);
+    --color-border-default: rgb(255 255 255 / 10%);
+    --color-border-strong: rgb(255 255 255 / 15%);
+    
+    /* Interactivity */
+    --color-bg-button: rgb(255 255 255 / 9%);
+    --color-bg-button-hover: rgb(255 255 255 / 14%);
+    
+    /* Scrollbars */
+    --color-scrollbar-track: transparent;
+    --color-scrollbar-thumb: rgb(255 255 255 / 15%);
+    --color-scrollbar-thumb-hover: rgb(255 255 255 / 25%);
+  }
+}

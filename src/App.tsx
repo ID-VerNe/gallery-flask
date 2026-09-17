@@ -504,7 +504,7 @@ export default function App() {
   });
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0A0A0A] text-white overflow-hidden antialiased">
+    <div className="flex flex-col h-screen w-screen bg-background-base text-white overflow-hidden antialiased">
       {/* Top Controls Bar */}
       <TopBar
         jpgFolder={jpgFolder}
@@ -589,7 +589,7 @@ export default function App() {
           />
         )}
         {/* Right Sidebar (Thumbnail Grid OR Tonal Adjuster) */}
-        <div className="w-[390px] h-full shrink-0 bg-[#0A0A0A]">
+        <div className="w-[390px] h-full shrink-0 bg-background-base">
           {showTonalPanel && currentGroup ? (
             <TonalAdjuster
               tone={currentTone || DEFAULT_TONE}

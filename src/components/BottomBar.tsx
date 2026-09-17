@@ -18,7 +18,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
   onOpenMetadataModal,
 }) => {
   return (
-    <footer className="h-9 bg-[#0A0A0A] border-t border-white/10 flex items-center justify-between px-3 text-[11px] text-white/60 shrink-0">
+    <footer className="h-9 bg-background-base border-t border-white/10 flex items-center justify-between px-3 text-[11px] text-white/60 shrink-0">
       {/* Left: Current File Info (Selectable text) */}
       <div className="flex items-center gap-3 select-text">
         {currentGroup ? (
@@ -66,10 +66,10 @@ export const BottomBar: React.FC<BottomBarProps> = ({
         <button
           onClick={onOpenMetadataModal}
           className="flex items-center gap-1 hover:text-white transition"
-          title="点击打开手动镜头与元数据编辑 (快捷键 M)"
+          title="编辑镜头元数据 (M)"
         >
-          <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px] font-mono text-amber-300">M</span>
-          <span className="text-amber-300">镜头元数据</span>
+          <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px] font-mono text-white/80">M</span>
+          <span>镜头信息</span>
         </button>
       </div>
 

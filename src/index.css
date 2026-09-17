@@ -1,10 +1,14 @@
+@import "./styles/design-tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-[#0A0A0A] text-white antialiased overflow-hidden;
+    background-color: var(--color-bg-base);
+    -webkit-font-smoothing: antialiased;
+    @apply text-white overflow-hidden;
   }
 }
 
@@ -14,12 +18,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #18191e;
+  background: var(--color-scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #323644;
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #464b5e;
+  background: var(--color-scrollbar-thumb-hover);
 }

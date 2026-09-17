@@ -85,11 +85,11 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="batch-export-modal-title"
-      className="fixed inset-0 z-50 bg-[#0A0A0A]/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 z-50 bg-background-base/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
     >
-      <div className="bg-[#181920] border border-[#2d303c] rounded-xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden text-white text-xs">
+      <div className="bg-background-panel border border-border-default rounded-xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden text-white text-xs">
         {/* Modal Header */}
-        <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-[#14151b]">
+        <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-background-header">
           <div className="flex items-center gap-2 font-semibold text-sm text-white">
             <Download className="w-4 h-4 text-white" aria-hidden="true" />
             <h2 id="batch-export-modal-title">批量挑选导出 (Culling Export)</h2>
@@ -117,7 +117,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 value={targetFolder}
                 onChange={(e) => setTargetFolder(e.target.value)}
                 placeholder="请选择或粘贴保存挑选照片的文件夹..."
-                className="flex-1 bg-[#0A0A0A] border border-[#2d303c] rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
+                className="flex-1 bg-background-base border border-border-default rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
               />
               <button
                 onClick={handleBrowseTarget}
@@ -133,7 +133,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
           {/* Filter Range */}
           <div className="flex flex-col gap-1.5">
             <label className="text-white/80 font-medium">导出范围：</label>
-            <div className="grid grid-cols-2 gap-2 bg-[#0A0A0A] p-2.5 rounded border border-[#252834]">
+            <div className="grid grid-cols-2 gap-2 bg-background-base p-2.5 rounded border border-border-subtle">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -179,7 +179,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
           {/* Options */}
           <div className="flex flex-col gap-1.5">
             <label className="text-white/80 font-medium">包含文件类型：</label>
-            <div className="flex items-center gap-4 bg-[#0A0A0A] p-2.5 rounded border border-[#252834]">
+            <div className="flex items-center gap-4 bg-background-base p-2.5 rounded border border-border-subtle">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -210,7 +210,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="h-12 border-t border-white/10 px-4 flex items-center justify-between bg-[#14151b]">
+        <div className="h-12 border-t border-white/10 px-4 flex items-center justify-between bg-background-header">
           <span className="text-white/60">
             预计导出: <b className="text-white font-mono tabular-nums">{exportCandidates.length}</b> 组照片
           </span>

@@ -65,7 +65,7 @@ export const TonalAdjuster: React.FC<TonalAdjusterProps> = ({
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="bg-[#0A0A0A] border-l border-white/10 h-full w-full p-5 text-xs flex flex-col gap-6"
+      className="bg-background-base border-l border-white/10 h-full w-full p-5 text-xs flex flex-col gap-6"
       role="region"
       aria-label="快速调色控制面板"
     >

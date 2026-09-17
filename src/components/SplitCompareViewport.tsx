@@ -120,7 +120,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
 
     if (!group || !src) {
       return (
-        <div className="flex-1 bg-[#101115] flex items-center justify-center text-white/40 text-xs">
+        <div className="flex-1 bg-background-surface-hover flex items-center justify-center text-white/40 text-xs">
           未选择对比照片
         </div>
       );
@@ -139,7 +139,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={() => handleDoubleClick(isLeft)}
-        className={`relative flex-1 bg-[#0c0d10] overflow-hidden flex items-center justify-center border-r border-[#20222a] last:border-r-0 select-none ${
+        className={`relative flex-1 bg-background-surface overflow-hidden flex items-center justify-center border-r border-border-subtle last:border-r-0 select-none ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         } ${isPinned ? 'ring-2 ring-inset ring-amber-500/40' : ''}`}
       >
@@ -157,7 +157,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
 
         {/* Top title, Reference status & Pin button */}
         <div className="absolute top-3 left-3 flex items-center gap-2 select-none pointer-events-auto">
-          <div className="bg-[#0A0A0A]/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-white flex items-center gap-2 border border-white/10 select-text shadow-lg">
+          <div className="bg-background-base/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-white flex items-center gap-2 border border-white/10 select-text">
             <span className="font-mono font-medium">{group.baseName}</span>
             {group.exif && (
               <span className="text-[11px] text-white/60 font-mono tabular-nums">
@@ -174,22 +174,22 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
               e.stopPropagation();
               onTogglePin();
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition shadow-lg ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
               isPinned
                 ? 'bg-amber-500 text-black font-semibold ring-1 ring-amber-400'
-                : 'bg-[#0A0A0A]/80 hover:bg-white/10 text-white/80 hover:text-white border border-white/15'
+                : 'bg-background-base/80 hover:bg-white/10 text-white/80 hover:text-white border border-white/15'
             }`}
-            title={isPinned ? `已锁定为基准 (按 B 或对应键取消)` : `点击锁定为固定对比基准 (快捷键: ${shortcutHint})`}
+            title={isPinned ? `已锁定为基准 (按 B 或对应键取消)` : `锁定对比基准 (${shortcutHint})`}
           >
             <Pin className={`w-3.5 h-3.5 ${isPinned ? 'fill-black' : ''}`} />
-            <span className="pb-[1px]">{isPinned ? '基准参考 (固定)' : `设为基准 (${shortcutHint})`}</span>
+            <span className="pb-[1px]">{isPinned ? '基准参考' : `设为基准 (${shortcutHint})`}</span>
           </button>
         </div>
 
         {/* Bottom ratings */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-3 bg-[#0A0A0A]/80 backdrop-blur px-3.5 py-1.5 rounded-full flex items-center gap-2.5 border border-white/15 shadow-xl pointer-events-auto"
+          className="absolute bottom-3 bg-background-base/80 backdrop-blur px-3.5 py-1.5 rounded-lg flex items-center gap-2.5 border border-white/15 pointer-events-auto"
           role="group"
           aria-label={`为照片 ${group.baseName} 打分和标记`}
         >
@@ -199,7 +199,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
               <button
                 key={star}
                 onClick={() => onRate(group, group.rating === star ? 0 : star)}
-                className="p-1 hover:scale-125 active:scale-95 transition"
+                className="p-1 hover:scale-125 active:scale-95 rounded-sm transition"
                 title={`评 ${star} 星`}
                 aria-label={`评 ${star} 星`}
                 aria-pressed={group.rating >= star}
@@ -221,10 +221,10 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
           {/* Pick / Reject */}
           <button
             onClick={() => onFlag(group, group.flag === 'pick' ? 'none' : 'pick')}
-            className={`p-1.5 rounded-full text-xs active:scale-[0.96] transition ${
+            className={`p-1.5 rounded-md text-xs active:scale-[0.96] transition border ${
               group.flag === 'pick'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-white/60 hover:text-white hover:bg-white/10'
+                ? 'bg-emerald-600/30 text-emerald-500 border-emerald-500/50'
+                : 'bg-transparent text-white/60 hover:text-white hover:bg-white/10 border-transparent'
             }`}
             title="保留 (Pick)"
             aria-label="标记保留 (Pick)"
@@ -234,10 +234,10 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
           </button>
           <button
             onClick={() => onFlag(group, group.flag === 'reject' ? 'none' : 'reject')}
-            className={`p-1.5 rounded-full text-xs active:scale-[0.96] transition ${
+            className={`p-1.5 rounded-md text-xs active:scale-[0.96] transition border ${
               group.flag === 'reject'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-white/60 hover:text-white hover:bg-white/10'
+                ? 'bg-rose-600/30 text-rose-500 border-rose-500/50'
+                : 'bg-transparent text-white/60 hover:text-white hover:bg-white/10 border-transparent'
             }`}
             title="淘汰 (Reject)"
             aria-label="标记淘汰 (Reject)"
@@ -251,9 +251,9 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full bg-[#0c0d10] relative">
+    <div className="flex-1 flex flex-col h-full w-full bg-background-surface relative">
       {/* Top Sync & Compare Control Bar */}
-      <div className="h-9 bg-[#0A0A0A] border-b border-white/10 flex items-center justify-between px-3 text-xs text-white/80 select-none">
+      <div className="h-9 bg-background-base border-b border-white/10 flex items-center justify-between px-3 text-xs text-white/80 select-none">
         <div className="flex items-center gap-2 font-medium">
           <Columns2 className="w-4 h-4 text-white" aria-hidden="true" />
           <span>双图对比视图</span>

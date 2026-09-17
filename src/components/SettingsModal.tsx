@@ -62,11 +62,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-modal-title"
-      className="fixed inset-0 z-50 bg-[#0A0A0A]/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 z-50 bg-background-base/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
     >
-      <div className="bg-[#181920] border border-[#2d303c] rounded-xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden text-white text-xs">
+      <div className="bg-background-panel border border-border-default rounded-xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden text-white text-xs">
         {/* Header */}
-        <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-[#14151b]">
+        <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-background-header">
           <div className="flex items-center gap-2 font-semibold text-sm text-white">
             <Settings className="w-4 h-4 text-white" aria-hidden="true" />
             <h2 id="settings-modal-title">首选项与工具设置</h2>
@@ -95,7 +95,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={(e) =>
                   setSettings({ ...settings, photoshopPath: e.target.value })
                 }
-                className="flex-1 bg-[#0A0A0A] border border-[#2d303c] rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
+                className="flex-1 bg-background-base border border-border-default rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
               />
               <button
                 onClick={handleBrowsePhotoshop}
@@ -129,13 +129,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   thumbnailWidth: parseInt(e.target.value, 10) || 200,
                 })
               }
-              className="w-32 bg-[#0A0A0A] border border-[#2d303c] rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
+              className="w-32 bg-background-base border border-border-default rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="h-12 border-t border-white/10 px-4 flex items-center justify-end gap-2 bg-[#14151b]">
+        <div className="h-12 border-t border-white/10 px-4 flex items-center justify-end gap-2 bg-background-header">
           <button
             onClick={onClose}
             className="px-3.5 py-1.5 rounded-md bg-white/5 hover:bg-white/10 active:scale-[0.96] text-white/80 transition-transform"
