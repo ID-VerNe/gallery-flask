@@ -1,7 +1,6 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { convertFileSrc } from '@tauri-apps/api/core';
-import { AppSettings, ExportItem, FolderScanResult } from '../types';
+import { AppSettings, ExportItem, FolderScanResult, ToneAdjustments } from '../types';
 
 export const api = {
   /**
@@ -65,6 +64,28 @@ export const api = {
    */
   openInDefaultApp: async (filePath: string): Promise<boolean> => {
     return await invoke<boolean>('open_in_default_app_cmd', {
+      filePath,
+    });
+  },
+
+  /**
+   * Save tone adjustments to XMP sidecar for Adobe Camera Raw compatibility
+   */
+  updateToneAdjustments: async (
+    filePath: string,
+    tone: ToneAdjustments,
+  ): Promise<boolean> => {
+    return await invoke<boolean>('update_tone_adjustments_cmd', {
+      filePath,
+      tone,
+    });
+  },
+
+  /**
+   * Open image in Luminar AI using Photoshop Plugin mode and return edited image path
+   */
+  openInLuminarRoundtrip: async (filePath: string): Promise<string> => {
+    return await invoke<string>('open_in_luminar_roundtrip_cmd', {
       filePath,
     });
   },

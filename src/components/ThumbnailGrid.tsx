@@ -50,20 +50,20 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   }, [selectedIndex, columns, groups.length, gridVirtualizer]);
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#14151a] border-l border-[#242731] select-none">
+    <div className="h-full w-full flex flex-col bg-[#0A0A0A] border-l border-white/10 select-none">
       {/* Top Header & Column Switcher */}
-      <div className="h-9 px-2.5 bg-[#171821] border-b border-[#242731] flex items-center justify-between text-xs text-gray-300 shrink-0">
-        <span className="font-medium text-[11px] text-gray-300 font-mono">
+      <div className="h-9 px-2.5 bg-[#0A0A0A] border-b border-white/10 flex items-center justify-between text-xs text-white/80 shrink-0">
+        <span className="font-medium text-[11px] text-white/80 font-mono">
           宫格列表 ({groups.length})
         </span>
 
-        <div className="flex items-center gap-1 bg-[#101116] p-0.5 rounded-lg border border-[#282b3a]">
+        <div className="flex items-center gap-1 bg-[#0A0A0A] p-0.5 rounded-lg border border-white/10">
           <button
             onClick={() => setColumns(3)}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition ${
               columns === 3
-                ? 'bg-blue-600 text-white font-medium shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-white text-black font-medium font-medium shadow-sm'
+                : 'text-white/60 hover:text-white'
             }`}
             title="一行 3 张缩略图"
           >
@@ -74,8 +74,8 @@ export const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
             onClick={() => setColumns(4)}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition ${
               columns === 4
-                ? 'bg-blue-600 text-white font-medium shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-white text-black font-medium font-medium shadow-sm'
+                : 'text-white/60 hover:text-white'
             }`}
             title="一行 4 张缩略图"
           >
@@ -177,7 +177,7 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
       ? 'border-emerald-500/70 bg-emerald-950/20'
       : group.flag === 'reject'
       ? 'border-rose-500/60 bg-rose-950/20'
-      : 'border-[#262936]';
+      : 'border-white/10';
 
   return (
     <div
@@ -191,17 +191,17 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
           onSelect();
         }
       }}
-      className={`relative rounded-lg flex flex-col overflow-hidden cursor-pointer transition-[border-color,box-shadow,transform] border text-left bg-[#181922] hover:bg-[#20222e] ${
+      className={`relative rounded-lg flex flex-col overflow-hidden cursor-pointer transition-[border-color,box-shadow,transform] border text-left bg-white/5 hover:bg-white/5 ${
         isPinned
           ? 'border-amber-400 ring-2 ring-inset ring-amber-400/60 shadow-lg'
           : isSelected
-          ? 'border-blue-500 ring-2 ring-inset ring-blue-500/60 shadow-md'
-          : `hover:border-[#3a3e52] ${flagBorder}`
+          ? 'border-sky-500 ring-2 ring-inset ring-sky-500/60 shadow-md'
+          : `hover:border-white/20 ${flagBorder}`
       }`}
       style={{ height: columns === 3 ? '132px' : '110px' }}
     >
       {/* Thumbnail Container */}
-      <div className="relative flex-1 bg-[#0a0b0e] overflow-hidden flex items-center justify-center p-0.5">
+      <div className="relative flex-1 bg-[#0A0A0A] overflow-hidden flex items-center justify-center p-0.5">
         {thumbSrc ? (
           <img
             src={thumbSrc}
@@ -211,11 +211,11 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
             loading="lazy"
           />
         ) : (
-          <div className="text-[10px] text-gray-500 font-mono">加载中</div>
+          <div className="text-[10px] text-white/40 font-mono">加载中</div>
         )}
 
         {/* Top-Right Index */}
-        <div className="absolute top-1 right-1 bg-black/75 backdrop-blur px-1 py-0.2 rounded text-[9px] font-mono text-gray-300 tabular-nums">
+        <div className="absolute top-1 right-1 bg-[#0A0A0A]/75 backdrop-blur px-1 py-0.2 rounded text-[9px] font-mono text-white/80 tabular-nums">
           #{index + 1}
         </div>
 
@@ -237,7 +237,7 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
 
         {/* Bottom-Right Rating */}
         {group.rating > 0 && (
-          <div className="absolute bottom-1 right-1 bg-black/85 backdrop-blur px-1 py-0.2 rounded flex items-center text-[10px] text-amber-300 font-bold gap-0.5 tabular-nums border border-white/10">
+          <div className="absolute bottom-1 right-1 bg-[#0A0A0A]/85 backdrop-blur px-1 py-0.2 rounded flex items-center text-[10px] text-amber-300 font-medium gap-0.5 tabular-nums border border-white/10">
             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
             <span>{group.rating}</span>
           </div>
@@ -245,16 +245,22 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
       </div>
 
       {/* Bottom Minimal File Stem & Badges */}
-      <div className="px-1.5 py-1 bg-[#13141a] border-t border-[#232532] flex items-center justify-between text-[10px] font-mono shrink-0">
-        <span className="text-gray-300 truncate max-w-[70%]" title={group.baseName}>
+      <div className="px-1.5 py-1 bg-[#0A0A0A] border-t border-white/10 flex items-center justify-between text-[10px] font-mono shrink-0">
+        <span className="text-white/80 truncate max-w-[70%]" title={group.baseName}>
           {group.baseName}
         </span>
         <div className="flex items-center gap-0.5">
           {group.raw && (
-            <span className="text-[9px] text-blue-400 font-medium">R</span>
+            <span className="text-[9px] text-white font-medium" title="RAW 原片">R</span>
           )}
           {group.hasXmp && (
-            <span className="text-[9px] text-amber-400 font-medium" title="包含 XMP">X</span>
+            <span className="text-[9px] text-amber-400 font-medium" title="包含 XMP 调色/标记">X</span>
+          )}
+          {group.tone && (
+            <span className="text-[9px] text-emerald-400 font-medium" title="已调色">T</span>
+          )}
+          {group.edited && (
+            <span className="text-[9px] text-purple-400 font-medium" title="包含精修成果 (Luminar AI)">E</span>
           )}
         </div>
       </div>

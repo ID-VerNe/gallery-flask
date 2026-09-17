@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-[#121316] text-[#e1e4ea] antialiased overflow-hidden;
+    @apply bg-[#0A0A0A] text-white antialiased overflow-hidden;
   }
 }
 

@@ -3,13 +3,19 @@ use std::path::{Path, PathBuf};
 
 const XPACKET_UUID: &str = "W5M0MpCehiHzreSzNTczkc9d";
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct XmpMetadata {
     pub rating: u8,
     pub label: String,
     pub lens_model: Option<String>,
     pub focal_length: Option<String>,
     pub aperture: Option<String>,
+    pub exposure: Option<f32>,
+    pub highlights: Option<f32>,
+    pub shadows: Option<f32>,
+    pub temperature: Option<f32>,
+    pub tint: Option<f32>,
+    pub contrast: Option<f32>,
 }
 
 /// Get the expected .xmp sidecar path for a given image file
@@ -80,12 +86,25 @@ pub fn read_xmp_full(xmp_path: &Path) -> Option<XmpMetadata> {
     let focal_length = extract_tag_value(&content, "exif:FocalLength");
     let aperture = extract_tag_value(&content, "exif:FNumber");
 
+    let exposure = extract_tag_value(&content, "crs:Exposure2012").and_then(|s| s.parse::<f32>().ok());
+    let highlights = extract_tag_value(&content, "crs:Highlights2012").and_then(|s| s.parse::<f32>().ok());
+    let shadows = extract_tag_value(&content, "crs:Shadows2012").and_then(|s| s.parse::<f32>().ok());
+    let temperature = extract_tag_value(&content, "crs:Temperature").and_then(|s| s.parse::<f32>().ok());
+    let tint = extract_tag_value(&content, "crs:Tint").and_then(|s| s.parse::<f32>().ok());
+    let contrast = extract_tag_value(&content, "crs:Contrast2012").and_then(|s| s.parse::<f32>().ok());
+
     Some(XmpMetadata {
         rating,
         label,
         lens_model,
         focal_length,
         aperture,
+        exposure,
+        highlights,
+        shadows,
+        temperature,
+        tint,
+        contrast,
     })
 }
 
@@ -143,6 +162,26 @@ pub fn write_xmp_full(image_path: &Path, meta: &XmpMetadata) -> Result<PathBuf, 
         String::new()
     };
 
+    let mut crs_tags = String::new();
+    if let Some(exp) = meta.exposure {
+        crs_tags.push_str(&format!("      <crs:Exposure2012>{:+.2}</crs:Exposure2012>\n", exp));
+    }
+    if let Some(hl) = meta.highlights {
+        crs_tags.push_str(&format!("      <crs:Highlights2012>{:+.0}</crs:Highlights2012>\n", hl));
+    }
+    if let Some(sh) = meta.shadows {
+        crs_tags.push_str(&format!("      <crs:Shadows2012>{:+.0}</crs:Shadows2012>\n", sh));
+    }
+    if let Some(temp) = meta.temperature {
+        crs_tags.push_str(&format!("      <crs:Temperature>{:.0}</crs:Temperature>\n", temp));
+    }
+    if let Some(tint) = meta.tint {
+        crs_tags.push_str(&format!("      <crs:Tint>{:+.0}</crs:Tint>\n", tint));
+    }
+    if let Some(ct) = meta.contrast {
+        crs_tags.push_str(&format!("      <crs:Contrast2012>{:+.0}</crs:Contrast2012>\n", ct));
+    }
+
     let body = format!(
         "<?xpacket begin=\"\u{feff}\" id=\"{}\"?>\n\
         <x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"GalleryCulling\">\n\
@@ -150,14 +189,15 @@ pub fn write_xmp_full(image_path: &Path, meta: &XmpMetadata) -> Result<PathBuf, 
         \x20   <rdf:Description rdf:about=\"\"\n\
         \x20       xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n\
         \x20       xmlns:aux=\"http://ns.adobe.com/exif/1.0/aux/\"\n\
-        \x20       xmlns:exif=\"http://ns.adobe.com/exif/1.0/\">\n\
+        \x20       xmlns:exif=\"http://ns.adobe.com/exif/1.0/\"\n\
+        \x20       xmlns:crs=\"http://ns.adobe.com/camera-raw-settings/1.0/\">\n\
         \x20     <xmp:Rating>{}</xmp:Rating>\n\
-        {}{}{}{}\
+        {}{}{}{}{}\
         \x20   </rdf:Description>\n\
         \x20 </rdf:RDF>\n\
         </x:xmpmeta>\n\
         <?xpacket end=\"w\"?>\n",
-        XPACKET_UUID, rating, label_tag, lens_tag, focal_tag, aperture_tag
+        XPACKET_UUID, rating, label_tag, lens_tag, focal_tag, aperture_tag, crs_tags
     );
 
     fs::write(&xmp_path, body)
@@ -175,6 +215,27 @@ pub fn write_xmp(image_path: &Path, rating: u8, flag: &str) -> Result<PathBuf, S
         "reject" => "Red".to_string(),
         _ => String::new(),
     };
+    write_xmp_full(image_path, &meta)
+}
+
+/// Update tone adjustments in XMP sidecar, preserving rating, label, and lens info
+pub fn update_xmp_tone(
+    image_path: &Path,
+    exposure: Option<f32>,
+    highlights: Option<f32>,
+    shadows: Option<f32>,
+    temperature: Option<f32>,
+    tint: Option<f32>,
+    contrast: Option<f32>,
+) -> Result<PathBuf, String> {
+    let xmp_path = get_xmp_path(image_path);
+    let mut meta = read_xmp_full(&xmp_path).unwrap_or_default();
+    meta.exposure = exposure;
+    meta.highlights = highlights;
+    meta.shadows = shadows;
+    meta.temperature = temperature;
+    meta.tint = tint;
+    meta.contrast = contrast;
     write_xmp_full(image_path, &meta)
 }
 
@@ -241,6 +302,36 @@ mod tests {
         );
         assert_eq!(full_meta.focal_length.as_deref(), Some("50mm"));
         assert_eq!(full_meta.aperture.as_deref(), Some("f/2.0"));
+
+        let _ = fs::remove_file(xmp_file);
+    }
+
+    #[test]
+    fn test_xmp_tone_update() {
+        let temp_dir = std::env::temp_dir();
+        let test_img = temp_dir.join("test_tone_sample.jpg");
+        let _ = write_xmp(&test_img, 3, "pick");
+
+        let xmp_file = update_xmp_tone(
+            &test_img,
+            Some(0.65),
+            Some(-20.0),
+            Some(45.0),
+            Some(5350.0),
+            Some(5.0),
+            Some(10.0),
+        )
+        .expect("Should update tone");
+
+        let full_meta = read_xmp_full(&xmp_file).expect("Should read full xmp");
+        assert_eq!(full_meta.rating, 3);
+        assert_eq!(full_meta.label, "Green");
+        assert_eq!(full_meta.exposure, Some(0.65));
+        assert_eq!(full_meta.highlights, Some(-20.0));
+        assert_eq!(full_meta.shadows, Some(45.0));
+        assert_eq!(full_meta.temperature, Some(5350.0));
+        assert_eq!(full_meta.tint, Some(5.0));
+        assert_eq!(full_meta.contrast, Some(10.0));
 
         let _ = fs::remove_file(xmp_file);
     }

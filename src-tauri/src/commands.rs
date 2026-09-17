@@ -253,3 +253,33 @@ pub fn load_session_cmd(
 ) -> Result<Option<(usize, String)>, String> {
     state.db.load_session(&jpg_folder)
 }
+
+#[tauri::command]
+pub async fn update_tone_adjustments_cmd(
+    file_path: String,
+    tone: crate::models::ToneAdjustments,
+) -> Result<bool, String> {
+    tokio::task::spawn_blocking(move || {
+        let path = Path::new(&file_path);
+        crate::xmp::update_xmp_tone(
+            path,
+            Some(tone.exposure),
+            Some(tone.highlights),
+            Some(tone.shadows),
+            Some(tone.temperature),
+            Some(tone.tint),
+            Some(tone.contrast),
+        )?;
+        Ok(true)
+    })
+    .await
+    .map_err(|e| format!("写入调色参数任务异常: {}", e))?
+}
+
+#[tauri::command]
+pub async fn open_in_luminar_roundtrip_cmd(file_path: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(file_path);
+    let edited_path = crate::luminar::edit_in_luminar(&path).await?;
+    Ok(edited_path.to_string_lossy().to_string())
+}
+

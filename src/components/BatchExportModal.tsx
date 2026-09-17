@@ -85,18 +85,18 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="batch-export-modal-title"
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 z-50 bg-[#0A0A0A]/70 backdrop-blur-sm flex items-center justify-center p-4 select-none"
     >
-      <div className="bg-[#181920] border border-[#2d303c] rounded-xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden text-gray-200 text-xs">
+      <div className="bg-[#181920] border border-[#2d303c] rounded-xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden text-white text-xs">
         {/* Modal Header */}
-        <div className="h-12 border-b border-[#292c37] px-4 flex items-center justify-between bg-[#14151b]">
+        <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-[#14151b]">
           <div className="flex items-center gap-2 font-semibold text-sm text-white">
-            <Download className="w-4 h-4 text-blue-400" aria-hidden="true" />
+            <Download className="w-4 h-4 text-white" aria-hidden="true" />
             <h2 id="batch-export-modal-title">批量挑选导出 (Culling Export)</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white p-1 rounded hover:bg-[#252834] active:scale-[0.96] transition"
+            className="text-white/60 hover:text-white p-1 rounded hover:bg-white/5 active:scale-[0.96] transition"
             aria-label="关闭导出弹窗"
           >
             <X className="w-4 h-4" aria-hidden="true" />
@@ -107,7 +107,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
         <div className="p-4 flex flex-col gap-4">
           {/* Target Folder */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="export-target-folder" className="text-gray-300 font-medium cursor-pointer">
+            <label htmlFor="export-target-folder" className="text-white/80 font-medium cursor-pointer">
               目标导出目录：
             </label>
             <div className="flex items-center gap-2">
@@ -117,11 +117,11 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 value={targetFolder}
                 onChange={(e) => setTargetFolder(e.target.value)}
                 placeholder="请选择或粘贴保存挑选照片的文件夹..."
-                className="flex-1 bg-[#121316] border border-[#2d303c] rounded-md px-3 py-1.5 text-gray-200 outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
+                className="flex-1 bg-[#0A0A0A] border border-[#2d303c] rounded-md px-3 py-1.5 text-white outline-none font-mono text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
               />
               <button
                 onClick={handleBrowseTarget}
-                className="px-3.5 py-1.5 bg-[#252834] hover:bg-[#323646] active:scale-[0.96] text-white rounded-md flex items-center gap-1.5 transition-transform"
+                className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 active:scale-[0.96] text-white rounded-md flex items-center gap-1.5 transition-transform"
                 aria-label="浏览选择目标导出目录"
               >
                 <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
@@ -132,8 +132,8 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
 
           {/* Filter Range */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-gray-300 font-medium">导出范围：</label>
-            <div className="grid grid-cols-2 gap-2 bg-[#121316] p-2.5 rounded border border-[#252834]">
+            <label className="text-white/80 font-medium">导出范围：</label>
+            <div className="grid grid-cols-2 gap-2 bg-[#0A0A0A] p-2.5 rounded border border-[#252834]">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -178,8 +178,8 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
 
           {/* Options */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-gray-300 font-medium">包含文件类型：</label>
-            <div className="flex items-center gap-4 bg-[#121316] p-2.5 rounded border border-[#252834]">
+            <label className="text-white/80 font-medium">包含文件类型：</label>
+            <div className="flex items-center gap-4 bg-[#0A0A0A] p-2.5 rounded border border-[#252834]">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -210,21 +210,21 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="h-12 border-t border-[#292c37] px-4 flex items-center justify-between bg-[#14151b]">
-          <span className="text-gray-400">
+        <div className="h-12 border-t border-white/10 px-4 flex items-center justify-between bg-[#14151b]">
+          <span className="text-white/60">
             预计导出: <b className="text-white font-mono tabular-nums">{exportCandidates.length}</b> 组照片
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-md bg-[#252834] hover:bg-[#323646] active:scale-[0.96] text-gray-300 transition-transform"
+              className="px-3.5 py-1.5 rounded-md bg-white/5 hover:bg-white/10 active:scale-[0.96] text-white/80 transition-transform"
             >
               取消
             </button>
             <button
               onClick={handleExport}
               disabled={isExporting || exportCandidates.length === 0 || !targetFolder.trim()}
-              className="px-4 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 active:scale-[0.96] disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium flex items-center gap-1.5 transition-transform"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-white/90 text-black active:scale-[0.96] disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed rounded-md font-medium transition-transform shadow-sm"
             >
               <Download className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{isExporting ? '导出中...' : '开始导出'}</span>

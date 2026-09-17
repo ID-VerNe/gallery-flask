@@ -111,19 +111,19 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 select-none">
+    <div className="fixed inset-0 z-50 bg-[#0A0A0A]/75 backdrop-blur-sm flex items-center justify-center p-4 select-none">
       <div className="bg-[#181920] border border-[#2e313d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#292c37] bg-[#1d1f27]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#1d1f27]">
           <div className="flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-blue-400" aria-hidden="true" />
+            <Sliders className="w-5 h-5 text-white" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-gray-100">
               手动镜头元数据编辑与批量同步
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition"
+            className="p-1.5 text-white/60 hover:text-white rounded-lg hover:bg-white/10 transition"
             aria-label="关闭窗口"
           >
             <X className="w-4 h-4" />
@@ -134,7 +134,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
         <div className="p-5 space-y-5 text-xs">
           {/* Quick presets */}
           <div>
-            <label className="block text-gray-300 font-medium mb-1.5 flex items-center gap-1.5">
+            <label className="block text-white/80 font-medium mb-1.5 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>常用手动镜头快捷预设</span>
             </label>
@@ -144,7 +144,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                   key={preset.name}
                   type="button"
                   onClick={() => handleApplyPreset(preset)}
-                  className="px-2.5 py-1 bg-[#232530] hover:bg-[#2e3242] border border-[#333747] text-gray-300 rounded-md text-[11px] transition text-left"
+                  className="px-2.5 py-1 bg-[#232530] hover:bg-[#2e3242] border border-[#333747] text-white/80 rounded-md text-[11px] transition text-left"
                 >
                   {preset.name}
                 </button>
@@ -155,7 +155,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
           {/* Form fields */}
           <div className="space-y-3.5 bg-[#121318] p-4 rounded-xl border border-[#272a36]">
             <div>
-              <label className="block text-gray-300 font-medium mb-1">
+              <label className="block text-white/80 font-medium mb-1">
                 镜头型号 (Lens Model)
               </label>
               <input
@@ -169,7 +169,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-gray-300 font-medium mb-1">
+                <label className="block text-white/80 font-medium mb-1">
                   焦段 / 焦距 (Focal Length)
                 </label>
                 <input
@@ -181,7 +181,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-gray-300 font-medium mb-1">
+                <label className="block text-white/80 font-medium mb-1">
                   光圈值 (Aperture / F-Number)
                 </label>
                 <input
@@ -197,7 +197,7 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
 
           {/* Sync Scope Selection */}
           <div>
-            <label className="block text-gray-300 font-medium mb-2">
+            <label className="block text-white/80 font-medium mb-2">
               批量同步目标范围
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -207,11 +207,11 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   syncScope === 'current'
                     ? 'border-blue-500 bg-blue-950/40 text-white font-medium'
-                    : 'border-[#2d303e] bg-[#1c1d25] text-gray-400 hover:text-gray-200'
+                    : 'border-[#2d303e] bg-[#1c1d25] text-white/60 hover:text-white'
                 }`}
               >
                 <span>仅当前选中照片</span>
-                <span className="text-[10px] text-gray-500 font-mono">(1 张)</span>
+                <span className="text-[10px] text-white/40 font-mono">(1 张)</span>
               </button>
 
               <button
@@ -220,11 +220,11 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   syncScope === 'filtered'
                     ? 'border-blue-500 bg-blue-950/40 text-white font-medium'
-                    : 'border-[#2d303e] bg-[#1c1d25] text-gray-400 hover:text-gray-200'
+                    : 'border-[#2d303e] bg-[#1c1d25] text-white/60 hover:text-white'
                 }`}
               >
                 <span>当前筛选集</span>
-                <span className="text-[10px] text-gray-500 font-mono">({filteredGroups.length} 张)</span>
+                <span className="text-[10px] text-white/40 font-mono">({filteredGroups.length} 张)</span>
               </button>
 
               <button
@@ -233,11 +233,11 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
                 className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                   syncScope === 'all'
                     ? 'border-blue-500 bg-blue-950/40 text-white font-medium'
-                    : 'border-[#2d303e] bg-[#1c1d25] text-gray-400 hover:text-gray-200'
+                    : 'border-[#2d303e] bg-[#1c1d25] text-white/60 hover:text-white'
                 }`}
               >
                 <span>全部扫描照片</span>
-                <span className="text-[10px] text-gray-500 font-mono">({allGroups.length} 张)</span>
+                <span className="text-[10px] text-white/40 font-mono">({allGroups.length} 张)</span>
               </button>
             </div>
           </div>
@@ -257,22 +257,22 @@ export const MetadataEditorModal: React.FC<MetadataEditorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-t border-[#292c37] bg-[#1d1f27]">
-          <span className="text-gray-400 text-xs">
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/10 bg-[#1d1f27]">
+          <span className="text-white/60 text-xs">
             将更新 <strong className="text-white font-mono">{targetGroups.length}</strong> 张照片
           </span>
 
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-gray-300 hover:text-white bg-[#262934] hover:bg-[#2f3342] rounded-lg transition"
+              className="px-4 py-2 text-xs font-medium text-white/80 hover:text-white bg-white/10 hover:bg-white/15 rounded-lg transition"
             >
               取消
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving || targetGroups.length === 0}
-              className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-lg transition shadow-md"
+              className="px-5 py-2 text-xs font-medium bg-white hover:bg-white/90 text-black active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-lg transition shadow-md"
             >
               {isSaving ? '正在写入 XMP...' : '确认并批量同步'}
             </button>

@@ -12,6 +12,10 @@ interface KeyboardShortcutsProps {
   onPinLeft?: () => void;
   onPinRight?: () => void;
   onOpenMetadataModal?: () => void;
+  onToggleBeforeAfter?: () => void;
+  onToggleTonalPanel?: () => void;
+  onHoldOriginalStart?: () => void;
+  onHoldOriginalEnd?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -26,6 +30,10 @@ export function useKeyboardShortcuts({
   onPinLeft,
   onPinRight,
   onOpenMetadataModal,
+  onToggleBeforeAfter,
+  onToggleTonalPanel,
+  onHoldOriginalStart,
+  onHoldOriginalEnd,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,6 +45,15 @@ export function useKeyboardShortcuts({
           target.tagName === 'TEXTAREA' ||
           target.isContentEditable)
       ) {
+        return;
+      }
+
+      // Hold Backslash (\) for momentary Before/Original preview
+      if (e.key === '\\') {
+        if (!e.repeat && onHoldOriginalStart) {
+          e.preventDefault();
+          onHoldOriginalStart();
+        }
         return;
       }
 
@@ -160,13 +177,52 @@ export function useKeyboardShortcuts({
           }
           break;
 
+        // Before / After Intra-Photo View Toggle (Y)
+        case 'y':
+        case 'Y':
+          if (onToggleBeforeAfter) {
+            e.preventDefault();
+            onToggleBeforeAfter();
+          }
+          break;
+
+        // Tonal Adjuster Panel Toggle (E)
+        case 'e':
+        case 'E':
+          if (onToggleTonalPanel) {
+            e.preventDefault();
+            onToggleTonalPanel();
+          }
+          break;
+
         default:
           break;
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === '\\' && onHoldOriginalEnd) {
+        e.preventDefault();
+        onHoldOriginalEnd();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [
     onPrev,
     onNext,
@@ -179,5 +235,9 @@ export function useKeyboardShortcuts({
     onPinLeft,
     onPinRight,
     onOpenMetadataModal,
+    onToggleBeforeAfter,
+    onToggleTonalPanel,
+    onHoldOriginalStart,
+    onHoldOriginalEnd,
   ]);
 }

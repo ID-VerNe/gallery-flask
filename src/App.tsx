@@ -4,14 +4,25 @@ import { relaunch } from '@tauri-apps/plugin-process';
 import { TopBar } from './components/TopBar';
 import { ThumbnailGrid } from './components/ThumbnailGrid';
 import { PreviewViewport } from './components/PreviewViewport';
+import { BeforeAfterViewport } from './components/BeforeAfterViewport';
 import { SplitCompareViewport } from './components/SplitCompareViewport';
+import { TonalAdjuster } from './components/TonalAdjuster';
 import { BottomBar } from './components/BottomBar';
 import { BatchExportModal } from './components/BatchExportModal';
 import { SettingsModal } from './components/SettingsModal';
 import { MetadataEditorModal } from './components/MetadataEditorModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { AppSettings, FilterMode, PhotoGroupInfo, SortOrder, ViewMode } from './types';
+import {
+  AppSettings,
+  FilterMode,
+  PhotoFileInfo,
+  PhotoGroupInfo,
+  SortOrder,
+  ViewMode,
+  ToneAdjustments,
+} from './types';
 import { api } from './services/api';
+import { computeAutoTone, DEFAULT_TONE } from './utils/autoTone';
 
 export default function App() {
   const [jpgFolder, setJpgFolder] = useState('');
@@ -29,6 +40,12 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  // Tonal & Luminar state
+  const [toneMap, setToneMap] = useState<Record<string, ToneAdjustments>>({});
+  const [showTonalPanel, setShowTonalPanel] = useState(false);
+  const [isLuminarRunning, setIsLuminarRunning] = useState(false);
+  const [isHoldOriginal, setIsHoldOriginal] = useState(false);
 
   // Load initial settings and default paths on startup
   useEffect(() => {
@@ -171,6 +188,13 @@ export default function App() {
       const res = await api.scanFolders(jpgFolder, rawFolder, sortOrder);
       setGroups(res.groups);
 
+      // Populate initial tones from XMP
+      const initialTones: Record<string, ToneAdjustments> = {};
+      res.groups.forEach((g) => {
+        if (g.tone) initialTones[g.id] = g.tone;
+      });
+      setToneMap(initialTones);
+
       // Check session history for this folder
       const history = await api.loadSession(jpgFolder);
       if (history && history[0] < res.groups.length) {
@@ -311,6 +335,124 @@ export default function App() {
     setViewMode((m) => (m === 'split' ? 'single' : 'split'));
   }, []);
 
+  const handleToggleBeforeAfter = useCallback(() => {
+    setViewMode((m) => (m === 'before_after' ? 'single' : 'before_after'));
+  }, []);
+
+  const handleToggleTonalPanel = useCallback(() => {
+    setShowTonalPanel((prev) => !prev);
+  }, []);
+
+  const handleHoldOriginalStart = useCallback(() => {
+    setIsHoldOriginal(true);
+  }, []);
+
+  const handleHoldOriginalEnd = useCallback(() => {
+    setIsHoldOriginal(false);
+  }, []);
+
+  // Tone adjustments state and handlers
+  const currentTone = currentGroup
+    ? toneMap[currentGroup.id] || currentGroup.tone || DEFAULT_TONE
+    : undefined;
+
+  const handleToneChange = useCallback(
+    (newTone: ToneAdjustments) => {
+      if (!currentGroup) return;
+      setToneMap((prev) => ({ ...prev, [currentGroup.id]: newTone }));
+      setGroups((prev) =>
+        prev.map((g) => (g.id === currentGroup.id ? { ...g, tone: newTone } : g))
+      );
+    },
+    [currentGroup],
+  );
+
+  const handleResetTone = useCallback(() => {
+    if (!currentGroup) return;
+    setToneMap((prev) => ({ ...prev, [currentGroup.id]: { ...DEFAULT_TONE } }));
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === currentGroup.id ? { ...g, tone: { ...DEFAULT_TONE } } : g
+      )
+    );
+  }, [currentGroup]);
+
+  const handleAutoTone = useCallback(() => {
+    if (!currentGroup) return;
+    const src = currentGroup.jpg?.path
+      ? api.toAssetUrl(currentGroup.jpg.path)
+      : currentGroup.raw?.path
+      ? api.toAssetUrl(currentGroup.raw.path)
+      : null;
+    if (!src) return;
+
+    const img = document.querySelector(
+      `img[alt="${currentGroup.baseName}"]`
+    ) as HTMLImageElement | null;
+    if (img && img.complete && img.naturalWidth > 0) {
+      const autoTone = computeAutoTone(img);
+      handleToneChange(autoTone);
+    } else {
+      const tempImg = new Image();
+      tempImg.crossOrigin = 'anonymous';
+      tempImg.onload = () => {
+        const autoTone = computeAutoTone(tempImg);
+        handleToneChange(autoTone);
+      };
+      tempImg.src = src;
+    }
+  }, [currentGroup, handleToneChange]);
+
+  const handleSaveToneToXmp = useCallback(async () => {
+    if (!currentGroup) return;
+    const toneToSave = toneMap[currentGroup.id] || currentGroup.tone || DEFAULT_TONE;
+    const targetPath = currentGroup.raw?.path || currentGroup.jpg?.path;
+    if (!targetPath) return;
+
+    try {
+      await api.updateToneAdjustments(targetPath, toneToSave);
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === currentGroup.id ? { ...g, hasXmp: true, tone: toneToSave } : g
+        )
+      );
+      alert('调色参数已成功写入同名 .xmp 文件！\nPhotoshop / ACR 打开时将自动载入该调色效果。');
+    } catch (err) {
+      alert(`写入 XMP 失败: ${err}`);
+    }
+  }, [currentGroup, toneMap]);
+
+  // Luminar AI Roundtrip Handler
+  const handleOpenLuminar = useCallback(async () => {
+    if (!currentGroup) return;
+    const targetPath = currentGroup.raw?.path || currentGroup.jpg?.path;
+    if (!targetPath) return;
+
+    setIsLuminarRunning(true);
+    try {
+      const editedPath = await api.openInLuminarRoundtrip(targetPath);
+      const ext = editedPath.split('.').pop() || 'tif';
+      const editedInfo: PhotoFileInfo = {
+        path: editedPath,
+        name: editedPath.split(/[/\\]/).pop() || 'edited.tif',
+        extension: ext,
+        size: 0,
+        mtime: Date.now() / 1000,
+      };
+
+      setGroups((prev) =>
+        prev.map((g) => (g.id === currentGroup.id ? { ...g, edited: editedInfo } : g))
+      );
+
+      // Automatically switch to Before/After comparison view to review result!
+      setViewMode('before_after');
+    } catch (err) {
+      alert(`调用 Luminar AI 失败或未完成: ${err}`);
+    } finally {
+      setIsLuminarRunning(false);
+    }
+  }, [currentGroup]);
+
   // Save session when index changes
   useEffect(() => {
     if (jpgFolder && selectedIndex >= 0) {
@@ -355,10 +497,14 @@ export default function App() {
     onPinLeft: handleTogglePinLeft,
     onPinRight: handleTogglePinRight,
     onOpenMetadataModal: () => setIsMetadataOpen(true),
+    onToggleBeforeAfter: handleToggleBeforeAfter,
+    onToggleTonalPanel: handleToggleTonalPanel,
+    onHoldOriginalStart: handleHoldOriginalStart,
+    onHoldOriginalEnd: handleHoldOriginalEnd,
   });
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#121316] text-[#e1e4ea] overflow-hidden antialiased">
+    <div className="flex flex-col h-screen w-screen bg-[#0A0A0A] text-white overflow-hidden antialiased">
       {/* Top Controls Bar */}
       <TopBar
         jpgFolder={jpgFolder}
@@ -382,6 +528,10 @@ export default function App() {
         onOpenExportModal={() => setIsExportOpen(true)}
         onOpenSettingsModal={() => setIsSettingsOpen(true)}
         onOpenMetadataModal={() => setIsMetadataOpen(true)}
+        onToggleTonalAdjuster={handleToggleTonalPanel}
+        showTonalPanel={showTonalPanel}
+        onOpenLuminar={handleOpenLuminar}
+        isLuminarRunning={isLuminarRunning}
       />
 
       {/* Main Content Area */}
@@ -390,12 +540,32 @@ export default function App() {
         {viewMode === 'single' && (
           <PreviewViewport
             group={currentGroup}
+            tone={currentTone}
+            isHoldOriginal={isHoldOriginal}
             onPrev={handlePrev}
             onNext={handleNext}
             onRate={(r) => handleRate(r)}
             onFlag={(f) => handleFlag(f)}
             onOpenExternal={handleOpenExternal}
+            onOpenLuminar={handleOpenLuminar}
+            onToggleTonalAdjuster={handleToggleTonalPanel}
+            isLuminarRunning={isLuminarRunning}
             onBrowseJpg={handleBrowseJpg}
+          />
+        )}
+
+        {viewMode === 'before_after' && (
+          <BeforeAfterViewport
+            group={currentGroup}
+            tone={currentTone}
+            isHoldOriginal={isHoldOriginal}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onRate={(r) => handleRate(r)}
+            onFlag={(f) => handleFlag(f)}
+            onOpenLuminar={handleOpenLuminar}
+            onToggleTonalAdjuster={handleToggleTonalPanel}
+            isLuminarRunning={isLuminarRunning}
           />
         )}
 
@@ -418,14 +588,25 @@ export default function App() {
             }}
           />
         )}
-        {/* Right Thumbnail Sidebar (Multi-column Compact Grid: 3-4 cols) */}
-        <div className="w-[390px] h-full shrink-0">
-          <ThumbnailGrid
-            groups={filteredGroups}
-            selectedIndex={selectedIndex}
-            pinnedId={pinnedId}
-            onSelect={handleSelectPhoto}
-          />
+        {/* Right Sidebar (Thumbnail Grid OR Tonal Adjuster) */}
+        <div className="w-[390px] h-full shrink-0 bg-[#0A0A0A]">
+          {showTonalPanel && currentGroup ? (
+            <TonalAdjuster
+              tone={currentTone || DEFAULT_TONE}
+              onChange={handleToneChange}
+              onReset={handleResetTone}
+              onAuto={handleAutoTone}
+              onSaveXmp={handleSaveToneToXmp}
+              onClose={() => setShowTonalPanel(false)}
+            />
+          ) : (
+            <ThumbnailGrid
+              groups={filteredGroups}
+              selectedIndex={selectedIndex}
+              pinnedId={pinnedId}
+              onSelect={handleSelectPhoto}
+            />
+          )}
         </div>
       </div>
 

@@ -3,13 +3,74 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 
-use crate::models::{ExifData, FolderScanResult, PhotoFileInfo, PhotoGroupInfo, PhotoGroupStatus};
+use crate::models::{
+    ExifData, FolderScanResult, PhotoFileInfo, PhotoGroupInfo, PhotoGroupStatus, ToneAdjustments,
+};
 use crate::xmp::{check_sidecar_exists, get_xmp_path, read_xmp_full, XmpMetadata};
 
 const RAW_EXTENSIONS: &[&str] = &[
     "arw", "cr2", "cr3", "nef", "dng", "orf", "rw2", "raf", "pef", "sr2", "srf", "x3f",
 ];
 const JPG_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp"];
+
+fn find_edited_version(base_dir: &Path, stem: &str) -> Option<PhotoFileInfo> {
+    let candidates = [
+        format!("{}_Luminar.tif", stem),
+        format!("{}_Luminar.jpg", stem),
+        format!("{}_Luminar.jpeg", stem),
+        format!("{}_Luminar.tiff", stem),
+        format!("{}_edit.tif", stem),
+        format!("{}_edit.jpg", stem),
+        format!("{}_edit.jpeg", stem),
+        format!("{}_edit.tiff", stem),
+    ];
+    for filename in candidates {
+        let p = base_dir.join(&filename);
+        if p.is_file() {
+            let metadata = p.metadata().ok();
+            let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+            let mtime = metadata
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let ext = p
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("jpg")
+                .to_lowercase();
+            return Some(PhotoFileInfo {
+                name: filename,
+                extension: ext,
+                path: p.to_string_lossy().to_string(),
+                size,
+                mtime,
+            });
+        }
+    }
+    None
+}
+
+fn extract_tone_from_xmp(meta: &XmpMetadata) -> Option<ToneAdjustments> {
+    if meta.exposure.is_some()
+        || meta.highlights.is_some()
+        || meta.shadows.is_some()
+        || meta.temperature.is_some()
+        || meta.tint.is_some()
+        || meta.contrast.is_some()
+    {
+        Some(ToneAdjustments {
+            exposure: meta.exposure.unwrap_or(0.0),
+            highlights: meta.highlights.unwrap_or(0.0),
+            shadows: meta.shadows.unwrap_or(0.0),
+            temperature: meta.temperature.unwrap_or(0.0),
+            tint: meta.tint.unwrap_or(0.0),
+            contrast: meta.contrast.unwrap_or(0.0),
+        })
+    } else {
+        None
+    }
+}
 
 /// Read EXIF metadata from an image file
 pub fn read_exif_metadata(file_path: &Path) -> Option<ExifData> {
@@ -263,11 +324,18 @@ pub fn scan_folders(
                 .unwrap_or(&stem_lower)
                 .to_string();
 
+            let tone = xmp_meta.as_ref().and_then(extract_tone_from_xmp);
+            let edited = path_obj
+                .parent()
+                .and_then(|p| find_edited_version(p, &base_name));
+
             groups.push(PhotoGroupInfo {
                 id: base_name.clone(),
                 base_name,
                 jpg: Some(jpg_info),
                 raw: None,
+                edited,
+                tone,
                 status: PhotoGroupStatus::JpgOnly,
                 rating,
                 flag,
@@ -366,11 +434,20 @@ pub fn scan_folders(
                 })
                 .unwrap_or_else(|| stem_lower.clone());
 
+            let tone = xmp_meta.as_ref().and_then(extract_tone_from_xmp);
+            let edited = jpg_opt
+                .as_ref()
+                .and_then(|j| Path::new(&j.path).parent())
+                .or_else(|| raw_opt.as_ref().and_then(|r| Path::new(&r.path).parent()))
+                .and_then(|p| find_edited_version(p, &base_name));
+
             groups.push(PhotoGroupInfo {
                 id: base_name.clone(),
                 base_name,
                 jpg: jpg_opt,
                 raw: raw_opt,
+                edited,
+                tone,
                 status,
                 rating,
                 flag,

@@ -120,7 +120,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
 
     if (!group || !src) {
       return (
-        <div className="flex-1 bg-[#101115] flex items-center justify-center text-gray-500 text-xs">
+        <div className="flex-1 bg-[#101115] flex items-center justify-center text-white/40 text-xs">
           未选择对比照片
         </div>
       );
@@ -157,10 +157,10 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
 
         {/* Top title, Reference status & Pin button */}
         <div className="absolute top-3 left-3 flex items-center gap-2 select-none pointer-events-auto">
-          <div className="bg-black/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-white flex items-center gap-2 border border-white/10 select-text shadow-lg">
+          <div className="bg-[#0A0A0A]/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-white flex items-center gap-2 border border-white/10 select-text shadow-lg">
             <span className="font-mono font-medium">{group.baseName}</span>
             {group.exif && (
-              <span className="text-[11px] text-gray-400 font-mono tabular-nums">
+              <span className="text-[11px] text-white/60 font-mono tabular-nums">
                 {[group.exif.focalLength, group.exif.aperture, group.exif.shutterSpeed, group.exif.iso ? `ISO${group.exif.iso}` : null]
                   .filter(Boolean)
                   .join(' ')}
@@ -177,7 +177,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition shadow-lg ${
               isPinned
                 ? 'bg-amber-500 text-black font-semibold ring-1 ring-amber-400'
-                : 'bg-black/80 hover:bg-white/10 text-gray-300 hover:text-white border border-white/15'
+                : 'bg-[#0A0A0A]/80 hover:bg-white/10 text-white/80 hover:text-white border border-white/15'
             }`}
             title={isPinned ? `已锁定为基准 (按 B 或对应键取消)` : `点击锁定为固定对比基准 (快捷键: ${shortcutHint})`}
           >
@@ -189,7 +189,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
         {/* Bottom ratings */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-3 bg-black/80 backdrop-blur px-3.5 py-1.5 rounded-full flex items-center gap-2.5 border border-white/15 shadow-xl pointer-events-auto"
+          className="absolute bottom-3 bg-[#0A0A0A]/80 backdrop-blur px-3.5 py-1.5 rounded-full flex items-center gap-2.5 border border-white/15 shadow-xl pointer-events-auto"
           role="group"
           aria-label={`为照片 ${group.baseName} 打分和标记`}
         >
@@ -208,7 +208,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
                   className={`w-3.5 h-3.5 ${
                     group.rating >= star
                       ? 'fill-amber-400 text-amber-400'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-white/40 hover:text-white/80'
                   }`}
                   aria-hidden="true"
                 />
@@ -224,7 +224,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             className={`p-1.5 rounded-full text-xs active:scale-[0.96] transition ${
               group.flag === 'pick'
                 ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-white/10'
+                : 'text-white/60 hover:text-white hover:bg-white/10'
             }`}
             title="保留 (Pick)"
             aria-label="标记保留 (Pick)"
@@ -237,7 +237,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             className={`p-1.5 rounded-full text-xs active:scale-[0.96] transition ${
               group.flag === 'reject'
                 ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-white/10'
+                : 'text-white/60 hover:text-white hover:bg-white/10'
             }`}
             title="淘汰 (Reject)"
             aria-label="标记淘汰 (Reject)"
@@ -253,11 +253,11 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#0c0d10] relative">
       {/* Top Sync & Compare Control Bar */}
-      <div className="h-9 bg-[#14151a] border-b border-[#242731] flex items-center justify-between px-3 text-xs text-gray-300 select-none">
+      <div className="h-9 bg-[#0A0A0A] border-b border-white/10 flex items-center justify-between px-3 text-xs text-white/80 select-none">
         <div className="flex items-center gap-2 font-medium">
-          <Columns2 className="w-4 h-4 text-blue-400" aria-hidden="true" />
+          <Columns2 className="w-4 h-4 text-white" aria-hidden="true" />
           <span>双图对比视图</span>
-          <span className="text-[11px] text-gray-500">
+          <span className="text-[11px] text-white/40">
             ({isLeftPinned ? '左图为基准，流动切换右图' : isRightPinned ? '右图为基准，流动切换左图' : '点击“设为基准”固定任意一张对比'})
           </span>
         </div>
@@ -266,10 +266,10 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
           {/* Swap A/B button */}
           <button
             onClick={onSwap}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#222530] hover:bg-[#2b2f3d] text-gray-300 hover:text-white rounded text-[11px] font-medium transition"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 hover:bg-white/15 text-white/80 hover:text-white rounded text-[11px] font-medium transition"
             title="对调左右两张照片 (快捷键 S)"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400" />
+            <ArrowLeftRight className="w-3.5 h-3.5 text-white" />
             <span className="pb-[1px]">左右互换 (S)</span>
           </button>
 
@@ -281,7 +281,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
               setLeftPos({ x: 0, y: 0 });
               setRightPos({ x: 0, y: 0 });
             }}
-            className="px-2 py-1 bg-[#222530] hover:bg-[#2b2f3d] text-gray-300 hover:text-white rounded text-[11px] transition"
+            className="px-2 py-1 bg-white/10 hover:bg-white/15 text-white/80 hover:text-white rounded text-[11px] transition"
             title="复位缩放与平移 (亦可直接双击照片)"
           >
             复位
@@ -292,8 +292,8 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             onClick={() => setSyncZoom(!syncZoom)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium active:scale-[0.96] transition-transform ${
               syncZoom
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-[#252834] text-gray-400 hover:text-gray-200'
+                ? 'bg-white text-black font-medium shadow-sm'
+                : 'bg-white/5 text-white/60 hover:text-white'
             }`}
             title="开启后双图同步缩放和平移"
             aria-label="切换双图联动同步缩放"

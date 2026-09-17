@@ -32,6 +32,17 @@ pub enum PhotoGroupStatus {
     RawOnly,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ToneAdjustments {
+    pub exposure: f32,
+    pub highlights: f32,
+    pub shadows: f32,
+    pub temperature: f32,
+    pub tint: f32,
+    pub contrast: f32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PhotoGroupInfo {
@@ -39,6 +50,8 @@ pub struct PhotoGroupInfo {
     pub base_name: String,
     pub jpg: Option<PhotoFileInfo>,
     pub raw: Option<PhotoFileInfo>,
+    pub edited: Option<PhotoFileInfo>,
+    pub tone: Option<ToneAdjustments>,
     pub status: PhotoGroupStatus,
     pub rating: u8,   // 0..5 stars
     pub flag: String, // "none", "pick", "reject"
