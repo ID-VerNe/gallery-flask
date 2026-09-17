@@ -1,11 +1,11 @@
 {
-  "version": "v1.1.0",
+  "version": "v1.1.1",
   "notes": "🚀 应用有新版本发布啦！",
-  "pub_date": "2026-09-17T07:42:20.919Z",
+  "pub_date": "2026-09-17T07:52:58.265Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUk44QnMyVGNzNGxzZXpqaEhwVUZxdXVqTGxIcFNCdGZyQ3BXY2NML2s4REZISU9EV0loa1VHQmVmd2JwamdHSE56aDNicDNBS0VQTFRNVzJEYldIOHBlYVlmdGljYVFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjMwOTQwCWZpbGU6Z2FsbGVyeS1jdWxsaW5nXzEuMS4wX3g2NC1zZXR1cC5leGUKVjhzWkh1bGpoM1M1TUJWQTFhaTZBd2t5SDBLZ3d1QUpNVjcyQjhHQUgvQXVtc3g2WmZ0dDBEL0tIR2ZMNkxTamY0RXJ0SEVmVGs1Q3ZkbDJkQkRxQWc9PQo=",
-      "url": "https://github.com/ID-VerNe/gallery-culling/releases/download/v1.1.0/gallery-culling_1.1.0_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUk44QnMyVGNzNHI5bm4yZ0JDL090K0xSbjNCTE9mb24ranR6M0daTkQ4UDdTV1M3ZUNlV04rbHRaTG9vQStQaURmUnM4ZDBBVzYxOE9HZHkrQnNCQjJPeUtUaE9SUGc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg5NjMxNTc3CWZpbGU6Z2FsbGVyeS1jdWxsaW5nXzEuMS4xX3g2NC1zZXR1cC5leGUKdHptSiswTTF2REdkUXV3ekxYcVlQam5KRGhYb1FaSmY0MUxXRXN6YjhQZ3B2Z3lOdGcxWHRxdmwwaVRzMjZWSEIvNldzMUdnMS9BWXJMcVVkbU5qQVE9PQo=",
+      "url": "https://github.com/ID-VerNe/gallery-culling/releases/download/v1.1.1/gallery-culling_1.1.1_x64-setup.exe"
     }
   }
 }
