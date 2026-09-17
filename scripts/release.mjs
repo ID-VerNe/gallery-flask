@@ -25,23 +25,23 @@ try {
 
   // 3. 执行 Tauri 构建 (带签名)
   console.log('🔨 正在执行 Tauri Build 构建应用，这可能需要几分钟...');
-  // 通过环境变量传入私钥路径
+  // 通过环境变量传入私钥内容
+  const privateKey = fs.existsSync(keyPath) ? fs.readFileSync(keyPath, 'utf8') : '';
   execSync('pnpm tauri build', { 
     stdio: 'inherit', 
     cwd: rootDir,
     env: { 
       ...process.env, 
-      TAURI_SIGNING_PRIVATE_KEY_PATH: keyPath,
+      TAURI_SIGNING_PRIVATE_KEY: privateKey,
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: '' 
     }
   });
 
-  // 4. 寻找更新包和签名文件 (Tauri 会自动打包出 .zip 和 .zip.sig 用于热更新)
-  // 优先寻找 NSIS 格式，也可以找 MSI 格式
+  // 4. 寻找更新包和签名文件 (Tauri v2 Windows 默认提供 exe 和 msi，以及对应的 .sig 文件)
+  // 优先寻找 NSIS 格式
   const nsisDir = path.join(rootDir, 'src-tauri', 'target', 'release', 'bundle', 'nsis');
   const setupExeName = `${productName}_${version}_x64-setup.exe`;
-  const zipName = `${setupExeName}.zip`;
-  const sigName = `${zipName}.sig`;
+  const sigName = `${setupExeName}.sig`;
 
   const sigPath = path.join(nsisDir, sigName);
   
@@ -60,7 +60,7 @@ try {
     platforms: {
       "windows-x86_64": {
         signature,
-        url: `https://github.com/ID-VerNe/gallery-culling/releases/download/v${version}/${zipName}`
+        url: `https://github.com/ID-VerNe/gallery-culling/releases/download/v${version}/${setupExeName}`
       }
     }
   };
@@ -72,7 +72,7 @@ try {
   console.log(`=========================================`);
   console.log(`🎉 打包与签名成功！接下来的发布步骤：`);
   console.log(`1. 在 GitHub 上创建一个 Release，标签为 v${version}`);
-  console.log(`2. 将以下两个文件上传到该 Release 的附件中：\n   - ${path.join(nsisDir, setupExeName)} (给新用户安装用)\n   - ${path.join(nsisDir, zipName)} (给老用户后台自动更新用)`);
+  console.log(`2. 将以下文件上传到该 Release 的附件中：\n   - ${path.join(nsisDir, setupExeName)}`);
   console.log(`3. 将本地新生成的 updater.json 执行 git commit 并 push 到 master 分支。`);
   console.log(`老客户端检测到 updater.json 发生变动后，就会自动弹窗提示用户更新了！`);
   console.log(`=========================================`);
