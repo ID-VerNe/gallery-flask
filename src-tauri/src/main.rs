@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  gallery_culling_lib::run();
+    gallery_culling_lib::run();
 }

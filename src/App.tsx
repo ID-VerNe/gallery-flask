@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { TopBar } from './components/TopBar';
 import { ThumbnailGrid } from './components/ThumbnailGrid';
 import { PreviewViewport } from './components/PreviewViewport';
@@ -36,6 +38,24 @@ export default function App() {
       if (s.defaultRawFolder) setRawFolder(s.defaultRawFolder);
       if (s.sortOrder) setSortOrder(s.sortOrder as SortOrder);
     });
+
+    // Check for updates
+    const checkForUpdates = async () => {
+      try {
+        const update = await check();
+        if (update) {
+          const yes = window.confirm(`🎉 发现新版本 ${update.version}！\n\n更新日志：\n${update.body || '修复已知问题，优化体验。'}\n\n是否立即下载并升级？`);
+          if (yes) {
+            await update.downloadAndInstall();
+            await relaunch();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check for updates:', err);
+      }
+    };
+    // small delay to not block initial render
+    setTimeout(checkForUpdates, 1000);
   }, []);
 
   // Filtered list of groups

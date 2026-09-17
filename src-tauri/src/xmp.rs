@@ -122,7 +122,10 @@ pub fn write_xmp_full(image_path: &Path, meta: &XmpMetadata) -> Result<PathBuf, 
 
     let focal_tag = if let Some(focal) = &meta.focal_length {
         if !focal.trim().is_empty() {
-            format!("      <exif:FocalLength>{}</exif:FocalLength>\n", focal.trim())
+            format!(
+                "      <exif:FocalLength>{}</exif:FocalLength>\n",
+                focal.trim()
+            )
         } else {
             String::new()
         }
@@ -157,7 +160,8 @@ pub fn write_xmp_full(image_path: &Path, meta: &XmpMetadata) -> Result<PathBuf, 
         XPACKET_UUID, rating, label_tag, lens_tag, focal_tag, aperture_tag
     );
 
-    fs::write(&xmp_path, body).map_err(|e| format!("写入 XMP 失败 ({}): {}", xmp_path.display(), e))?;
+    fs::write(&xmp_path, body)
+        .map_err(|e| format!("写入 XMP 失败 ({}): {}", xmp_path.display(), e))?;
     Ok(xmp_path)
 }
 
@@ -231,7 +235,10 @@ mod tests {
         let full_meta = read_xmp_full(&xmp_file).expect("Should read full xmp");
         assert_eq!(full_meta.rating, 5);
         assert_eq!(full_meta.label, "Green");
-        assert_eq!(full_meta.lens_model.as_deref(), Some("Voigtlander 50mm F2 APO"));
+        assert_eq!(
+            full_meta.lens_model.as_deref(),
+            Some("Voigtlander 50mm F2 APO")
+        );
         assert_eq!(full_meta.focal_length.as_deref(), Some("50mm"));
         assert_eq!(full_meta.aperture.as_deref(), Some("f/2.0"));
 

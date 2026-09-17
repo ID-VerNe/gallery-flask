@@ -1,7 +1,7 @@
+use crate::models::AppSettings;
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use rusqlite::{params, Connection};
-use crate::models::AppSettings;
 
 pub struct Database {
     conn: Mutex<Connection>,
@@ -20,7 +20,8 @@ impl Database {
                 value TEXT NOT NULL
             )",
             [],
-        ).map_err(|e| format!("创建 settings 表失败: {}", e))?;
+        )
+        .map_err(|e| format!("创建 settings 表失败: {}", e))?;
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS sessions (
@@ -31,7 +32,8 @@ impl Database {
                 updated_at INTEGER
             )",
             [],
-        ).map_err(|e| format!("创建 sessions 表失败: {}", e))?;
+        )
+        .map_err(|e| format!("创建 sessions 表失败: {}", e))?;
 
         Ok(Self {
             conn: Mutex::new(conn),
@@ -72,7 +74,7 @@ impl Database {
 
     pub fn save_settings(&self, settings: &AppSettings) -> Result<(), String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
-        
+
         let pairs = [
             ("default_jpg_folder", settings.default_jpg_folder.as_str()),
             ("default_raw_folder", settings.default_raw_folder.as_str()),
@@ -86,7 +88,8 @@ impl Database {
                 "INSERT INTO settings (key, value) VALUES (?1, ?2)
                  ON CONFLICT(key) DO UPDATE SET value = ?2",
                 params![k, v],
-            ).map_err(|e| format!("保存设置 '{}' 失败: {}", k, e))?;
+            )
+            .map_err(|e| format!("保存设置 '{}' 失败: {}", k, e))?;
         }
 
         Ok(())
@@ -113,8 +116,15 @@ impl Database {
                 last_index = ?3,
                 sort_order = ?4,
                 updated_at = ?5",
-            params![jpg_folder, raw_folder, last_index as i64, sort_order, now as i64],
-        ).map_err(|e| format!("保存会话失败: {}", e))?;
+            params![
+                jpg_folder,
+                raw_folder,
+                last_index as i64,
+                sort_order,
+                now as i64
+            ],
+        )
+        .map_err(|e| format!("保存会话失败: {}", e))?;
 
         Ok(())
     }
@@ -125,9 +135,7 @@ impl Database {
             .prepare("SELECT last_index, sort_order FROM sessions WHERE jpg_folder = ?1")
             .map_err(|e| e.to_string())?;
 
-        let mut rows = stmt
-            .query(params![jpg_folder])
-            .map_err(|e| e.to_string())?;
+        let mut rows = stmt.query(params![jpg_folder]).map_err(|e| e.to_string())?;
 
         if let Some(row) = rows.next().map_err(|e| e.to_string())? {
             let last_index: i64 = row.get(0).unwrap_or(0);
@@ -141,7 +149,11 @@ impl Database {
 
 fn get_db_path() -> PathBuf {
     let local = PathBuf::from("gallery_culling.db");
-    if let Ok(_) = std::fs::OpenOptions::new().create(true).write(true).open(&local) {
+    if let Ok(_) = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(&local)
+    {
         local
     } else {
         std::env::temp_dir().join("gallery_culling.db")

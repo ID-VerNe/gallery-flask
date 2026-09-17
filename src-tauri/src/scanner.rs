@@ -68,22 +68,55 @@ pub fn read_exif_metadata(file_path: &Path) -> Option<ExifData> {
 
     // Capture Date / Time
     if let Some(field) = exif.get_field(exif::Tag::DateTimeOriginal, exif::In::PRIMARY) {
-        data.date_time = Some(field.display_value().to_string().trim_matches('"').to_string());
+        data.date_time = Some(
+            field
+                .display_value()
+                .to_string()
+                .trim_matches('"')
+                .to_string(),
+        );
     } else if let Some(field) = exif.get_field(exif::Tag::DateTime, exif::In::PRIMARY) {
-        data.date_time = Some(field.display_value().to_string().trim_matches('"').to_string());
+        data.date_time = Some(
+            field
+                .display_value()
+                .to_string()
+                .trim_matches('"')
+                .to_string(),
+        );
     }
 
     // Camera Make & Model
     if let Some(field) = exif.get_field(exif::Tag::Make, exif::In::PRIMARY) {
-        data.camera_make = Some(field.display_value().to_string().trim_matches('"').trim().to_string());
+        data.camera_make = Some(
+            field
+                .display_value()
+                .to_string()
+                .trim_matches('"')
+                .trim()
+                .to_string(),
+        );
     }
     if let Some(field) = exif.get_field(exif::Tag::Model, exif::In::PRIMARY) {
-        data.camera_model = Some(field.display_value().to_string().trim_matches('"').trim().to_string());
+        data.camera_model = Some(
+            field
+                .display_value()
+                .to_string()
+                .trim_matches('"')
+                .trim()
+                .to_string(),
+        );
     }
 
     // Lens Model
     if let Some(field) = exif.get_field(exif::Tag::LensModel, exif::In::PRIMARY) {
-        data.lens_model = Some(field.display_value().to_string().trim_matches('"').trim().to_string());
+        data.lens_model = Some(
+            field
+                .display_value()
+                .to_string()
+                .trim_matches('"')
+                .trim()
+                .to_string(),
+        );
     }
 
     // Orientation (1..=8)
@@ -109,7 +142,11 @@ fn scan_directory(dir_path: &Path, allowed_exts: &[&str]) -> HashMap<String, Pho
                 let ext_lower = ext.to_lowercase();
                 if allowed_exts.contains(&ext_lower.as_str()) {
                     if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+                        let name = path
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("")
+                            .to_string();
                         let metadata = entry.metadata().ok();
                         let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
                         let mtime = metadata
@@ -145,7 +182,8 @@ pub fn scan_folders(
         return Err(format!("JPG 文件夹不存在或不是有效目录: {}", jpg_folder));
     }
 
-    let is_viewer_mode = raw_folder.is_none() || raw_folder.map(|s| s.trim().is_empty()).unwrap_or(true);
+    let is_viewer_mode =
+        raw_folder.is_none() || raw_folder.map(|s| s.trim().is_empty()).unwrap_or(true);
     let raw_path_buf = raw_folder.and_then(|s| {
         let trimmed = s.trim();
         if trimmed.is_empty() {
@@ -166,26 +204,29 @@ pub fn scan_folders(
         HashMap::new()
     };
 
-fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetadata) {
-    if let Some(e) = exif.as_mut() {
-        if xmp_meta.lens_model.is_some() {
-            e.lens_model = xmp_meta.lens_model.clone();
+    fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetadata) {
+        if let Some(e) = exif.as_mut() {
+            if xmp_meta.lens_model.is_some() {
+                e.lens_model = xmp_meta.lens_model.clone();
+            }
+            if xmp_meta.focal_length.is_some() {
+                e.focal_length = xmp_meta.focal_length.clone();
+            }
+            if xmp_meta.aperture.is_some() {
+                e.aperture = xmp_meta.aperture.clone();
+            }
+        } else if xmp_meta.lens_model.is_some()
+            || xmp_meta.focal_length.is_some()
+            || xmp_meta.aperture.is_some()
+        {
+            *exif = Some(ExifData {
+                lens_model: xmp_meta.lens_model.clone(),
+                focal_length: xmp_meta.focal_length.clone(),
+                aperture: xmp_meta.aperture.clone(),
+                ..Default::default()
+            });
         }
-        if xmp_meta.focal_length.is_some() {
-            e.focal_length = xmp_meta.focal_length.clone();
-        }
-        if xmp_meta.aperture.is_some() {
-            e.aperture = xmp_meta.aperture.clone();
-        }
-    } else if xmp_meta.lens_model.is_some() || xmp_meta.focal_length.is_some() || xmp_meta.aperture.is_some() {
-        *exif = Some(ExifData {
-            lens_model: xmp_meta.lens_model.clone(),
-            focal_length: xmp_meta.focal_length.clone(),
-            aperture: xmp_meta.aperture.clone(),
-            ..Default::default()
-        });
     }
-}
 
     let mut groups: Vec<PhotoGroupInfo> = Vec::new();
 
@@ -216,7 +257,11 @@ fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetad
             if let Some(m) = &xmp_meta {
                 merge_xmp_metadata_into_exif(&mut exif, m);
             }
-            let base_name = path_obj.file_stem().and_then(|s| s.to_str()).unwrap_or(&stem_lower).to_string();
+            let base_name = path_obj
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(&stem_lower)
+                .to_string();
 
             groups.push(PhotoGroupInfo {
                 id: base_name.clone(),
@@ -303,11 +348,21 @@ fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetad
 
             let base_name = jpg_opt
                 .as_ref()
-                .map(|j| Path::new(&j.path).file_stem().and_then(|s| s.to_str()).unwrap_or(&stem_lower).to_string())
+                .map(|j| {
+                    Path::new(&j.path)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or(&stem_lower)
+                        .to_string()
+                })
                 .or_else(|| {
-                    raw_opt
-                        .as_ref()
-                        .map(|r| Path::new(&r.path).file_stem().and_then(|s| s.to_str()).unwrap_or(&stem_lower).to_string())
+                    raw_opt.as_ref().map(|r| {
+                        Path::new(&r.path)
+                            .file_stem()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or(&stem_lower)
+                            .to_string()
+                    })
                 })
                 .unwrap_or_else(|| stem_lower.clone());
 
@@ -347,7 +402,10 @@ fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetad
                     .and_then(|e| e.date_time.as_ref())
                     .cloned()
                     .unwrap_or_else(|| {
-                        a.jpg.as_ref().map(|j| j.mtime.to_string()).unwrap_or_default()
+                        a.jpg
+                            .as_ref()
+                            .map(|j| j.mtime.to_string())
+                            .unwrap_or_default()
                     });
                 let time_b = b
                     .exif
@@ -355,7 +413,10 @@ fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetad
                     .and_then(|e| e.date_time.as_ref())
                     .cloned()
                     .unwrap_or_else(|| {
-                        b.jpg.as_ref().map(|j| j.mtime.to_string()).unwrap_or_default()
+                        b.jpg
+                            .as_ref()
+                            .map(|j| j.mtime.to_string())
+                            .unwrap_or_default()
                     });
 
                 time_a

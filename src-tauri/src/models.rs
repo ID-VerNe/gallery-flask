@@ -40,8 +40,8 @@ pub struct PhotoGroupInfo {
     pub jpg: Option<PhotoFileInfo>,
     pub raw: Option<PhotoFileInfo>,
     pub status: PhotoGroupStatus,
-    pub rating: u8,         // 0..5 stars
-    pub flag: String,       // "none", "pick", "reject"
+    pub rating: u8,   // 0..5 stars
+    pub flag: String, // "none", "pick", "reject"
     pub has_xmp: bool,
     pub exif: Option<ExifData>,
     pub thumbnail_path: Option<String>,
@@ -72,7 +72,8 @@ impl Default for AppSettings {
         Self {
             default_jpg_folder: String::new(),
             default_raw_folder: String::new(),
-            photoshop_path: r"C:\Program Files\Adobe\Adobe Photoshop 2025\Photoshop.exe".to_string(),
+            photoshop_path: r"C:\Program Files\Adobe\Adobe Photoshop 2025\Photoshop.exe"
+                .to_string(),
             thumbnail_width: 200,
             sort_order: "time_filename".to_string(),
         }

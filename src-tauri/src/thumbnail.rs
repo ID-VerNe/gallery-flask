@@ -1,17 +1,20 @@
+use fast_image_resize::images::Image as FirImage;
+use fast_image_resize::{PixelType, Resizer};
+use image::{DynamicImage, GenericImageView, ImageFormat, RgbImage};
+use sha2::{Digest, Sha256};
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use sha2::{Digest, Sha256};
-use image::{DynamicImage, GenericImageView, ImageFormat, RgbImage};
-use fast_image_resize::images::Image as FirImage;
-use fast_image_resize::{PixelType, Resizer};
 
 /// Ensure thumbnail cache directory exists
 pub fn get_cache_dir() -> PathBuf {
     // Priority: ./app_cache or AppData/Local/GalleryCulling/cache
     let project_cache = PathBuf::from("app_cache");
     if let Err(e) = fs::create_dir_all(&project_cache) {
-        eprintln!("Failed to create local app_cache: {}, falling back to temp_dir", e);
+        eprintln!(
+            "Failed to create local app_cache: {}, falling back to temp_dir",
+            e
+        );
         let fallback = std::env::temp_dir().join("gallery_culling_cache");
         let _ = fs::create_dir_all(&fallback);
         fallback
@@ -57,15 +60,28 @@ pub fn get_cache_path(file_path: &Path, width: u32, orientation: u32) -> PathBuf
     let abs_path = fs::canonicalize(file_path).unwrap_or_else(|_| file_path.to_path_buf());
     let mtime = fs::metadata(file_path)
         .and_then(|m| m.modified())
-        .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs())
+        .map(|t| {
+            t.duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+        })
         .unwrap_or(0);
 
-    let key = format!("{}-{}-{}-{}-thumb-v2", abs_path.to_string_lossy(), mtime, width, orientation);
+    let key = format!(
+        "{}-{}-{}-{}-thumb-v2",
+        abs_path.to_string_lossy(),
+        mtime,
+        width,
+        orientation
+    );
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
     let hash = format!("{:x}", hasher.finalize());
 
-    let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("image");
+    let stem = file_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("image");
     let filename = format!("{}_{}_{}_rot{}.jpg", &hash[..16], stem, width, orientation);
     get_cache_dir().join(filename)
 }
@@ -78,9 +94,16 @@ pub fn try_extract_exif_thumbnail(file_path: &Path) -> Option<Vec<u8>> {
     let exif = exifreader.read_from_container(&mut buf_reader).ok()?;
 
     // Some cameras store JPEG thumbnail in IFD1
-    if let Some(offset_field) = exif.get_field(exif::Tag::JPEGInterchangeFormat, exif::In::THUMBNAIL) {
-        if let Some(length_field) = exif.get_field(exif::Tag::JPEGInterchangeFormatLength, exif::In::THUMBNAIL) {
-            if let (Some(offset), Some(length)) = (offset_field.value.get_uint(0), length_field.value.get_uint(0)) {
+    if let Some(offset_field) =
+        exif.get_field(exif::Tag::JPEGInterchangeFormat, exif::In::THUMBNAIL)
+    {
+        if let Some(length_field) =
+            exif.get_field(exif::Tag::JPEGInterchangeFormatLength, exif::In::THUMBNAIL)
+        {
+            if let (Some(offset), Some(length)) = (
+                offset_field.value.get_uint(0),
+                length_field.value.get_uint(0),
+            ) {
                 use std::io::{Read, Seek, SeekFrom};
                 let mut file = File::open(file_path).ok()?;
                 file.seek(SeekFrom::Start(offset as u64)).ok()?;
@@ -113,7 +136,8 @@ pub fn resize_simd(img: &DynamicImage, target_width: u32) -> Result<RgbImage, St
     let mut dst_image = FirImage::new(target_width, target_height, PixelType::U8x3);
 
     let mut resizer = Resizer::new();
-    resizer.resize(&src_image, &mut dst_image, None)
+    resizer
+        .resize(&src_image, &mut dst_image, None)
         .map_err(|e| format!("Resize error: {:?}", e))?;
 
     let dst_bytes = dst_image.into_vec();
@@ -132,7 +156,9 @@ pub fn get_or_create_thumbnail(file_path: &Path, target_width: u32) -> Result<St
 
     // Cache hit check
     if cache_path.exists() {
-        if let (Ok(orig_meta), Ok(cache_meta)) = (fs::metadata(file_path), fs::metadata(&cache_path)) {
+        if let (Ok(orig_meta), Ok(cache_meta)) =
+            (fs::metadata(file_path), fs::metadata(&cache_path))
+        {
             if let (Ok(orig_time), Ok(cache_time)) = (orig_meta.modified(), cache_meta.modified()) {
                 if cache_time >= orig_time && cache_meta.len() > 0 {
                     return Ok(cache_path.to_string_lossy().to_string());
@@ -146,7 +172,8 @@ pub fn get_or_create_thumbnail(file_path: &Path, target_width: u32) -> Result<St
         if let Ok(thumb_img) = image::load_from_memory(&thumb_bytes) {
             let oriented = apply_orientation(thumb_img, orientation);
             let resized = resize_simd(&oriented, target_width)?;
-            resized.save_with_format(&cache_path, ImageFormat::Jpeg)
+            resized
+                .save_with_format(&cache_path, ImageFormat::Jpeg)
                 .map_err(|e| format!("保存缩略图缓存失败: {}", e))?;
             return Ok(cache_path.to_string_lossy().to_string());
         }
@@ -158,7 +185,8 @@ pub fn get_or_create_thumbnail(file_path: &Path, target_width: u32) -> Result<St
 
     let oriented = apply_orientation(img, orientation);
     let resized = resize_simd(&oriented, target_width)?;
-    resized.save_with_format(&cache_path, ImageFormat::Jpeg)
+    resized
+        .save_with_format(&cache_path, ImageFormat::Jpeg)
         .map_err(|e| format!("保存缩略图缓存失败: {}", e))?;
 
     Ok(cache_path.to_string_lossy().to_string())

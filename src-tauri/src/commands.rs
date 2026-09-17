@@ -20,18 +20,13 @@ pub async fn scan_folders_cmd(
     sort_order: Option<String>,
 ) -> Result<FolderScanResult, String> {
     let sort = sort_order.unwrap_or_else(|| "time_filename".to_string());
-    tokio::task::spawn_blocking(move || {
-        scan_folders(&jpg_folder, raw_folder.as_deref(), &sort)
-    })
-    .await
-    .map_err(|e| format!("扫描任务异常: {}", e))?
+    tokio::task::spawn_blocking(move || scan_folders(&jpg_folder, raw_folder.as_deref(), &sort))
+        .await
+        .map_err(|e| format!("扫描任务异常: {}", e))?
 }
 
 #[tauri::command]
-pub async fn get_thumbnail_cmd(
-    file_path: String,
-    width: Option<u32>,
-) -> Result<String, String> {
+pub async fn get_thumbnail_cmd(file_path: String, width: Option<u32>) -> Result<String, String> {
     let target_width = width.unwrap_or(200);
     tokio::task::spawn_blocking(move || {
         let path = Path::new(&file_path);
@@ -97,7 +92,9 @@ pub async fn open_in_photoshop_cmd(
         .filter(|s| !s.trim().is_empty())
         .unwrap_or(settings.photoshop_path);
 
-    let ps_path = raw_ps_path.trim_matches(|c| c == '"' || c == '\'' || c == ' ').to_string();
+    let ps_path = raw_ps_path
+        .trim_matches(|c| c == '"' || c == '\'' || c == ' ')
+        .to_string();
 
     if !Path::new(&ps_path).exists() {
         // Fallback to default app
@@ -171,8 +168,7 @@ pub async fn batch_export_cmd(
     tokio::task::spawn_blocking(move || {
         let target_dir = Path::new(&target_folder);
         if !target_dir.exists() {
-            fs::create_dir_all(target_dir)
-                .map_err(|e| format!("创建目标导出目录失败: {}", e))?;
+            fs::create_dir_all(target_dir).map_err(|e| format!("创建目标导出目录失败: {}", e))?;
         }
 
         let mut exported = 0;
@@ -228,7 +224,10 @@ pub fn get_settings_cmd(state: State<'_, AppState>) -> Result<AppSettings, Strin
 }
 
 #[tauri::command]
-pub fn save_settings_cmd(settings: AppSettings, state: State<'_, AppState>) -> Result<bool, String> {
+pub fn save_settings_cmd(
+    settings: AppSettings,
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
     state.db.save_settings(&settings)?;
     Ok(true)
 }
