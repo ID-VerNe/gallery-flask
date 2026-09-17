@@ -190,7 +190,7 @@ export const PreviewViewport: React.FC<PreviewViewportProps> = ({
       {/* Floating Bottom Quick Action Bar */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-3 border border-white/15 shadow-2xl pointer-events-auto"
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-3 border border-white/15 shadow-2xl pointer-events-auto opacity-50 hover:opacity-100 transition-opacity duration-200"
       >
         {/* Rating Stars (1 to 5) */}
         <div className="flex items-center gap-1 border-r border-white/15 pr-3" role="group" aria-label="照片星级打分">
@@ -268,7 +268,7 @@ export const PreviewViewport: React.FC<PreviewViewportProps> = ({
           aria-label="在修图或外部程序中打开"
         >
           <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-          <span>{group.raw ? '在修图软件中打开' : '在外部查看器打开'}</span>
+          <span className="pb-[1px]">{group.raw ? '在修图软件中打开' : '在外部查看器打开'}</span>
         </button>
       </div>
     </div>

@@ -193,9 +193,9 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
       }}
       className={`relative rounded-lg flex flex-col overflow-hidden cursor-pointer transition-[border-color,box-shadow,transform] border text-left bg-[#181922] hover:bg-[#20222e] ${
         isPinned
-          ? 'border-amber-400 ring-2 ring-amber-400/60 shadow-lg'
+          ? 'border-amber-400 ring-2 ring-inset ring-amber-400/60 shadow-lg'
           : isSelected
-          ? 'border-blue-500 ring-2 ring-blue-500/60 shadow-md'
+          ? 'border-blue-500 ring-2 ring-inset ring-blue-500/60 shadow-md'
           : `hover:border-[#3a3e52] ${flagBorder}`
       }`}
       style={{ height: columns === 3 ? '132px' : '110px' }}
@@ -221,7 +221,7 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
 
         {/* Top-Left: Pick/Reject Badge or Pinned Reference */}
         {isPinned ? (
-          <div className="absolute top-1 left-1 bg-amber-500 text-black rounded px-1 py-0.2 shadow flex items-center gap-0.5 text-[9px] font-bold">
+          <div className="absolute top-1 left-1 bg-amber-500 text-black rounded px-1 py-0.2 shadow flex items-center gap-0.5 text-[9px] font-medium">
             <Pin className="w-2.5 h-2.5 fill-black" />
             <span>基准</span>
           </div>
@@ -251,10 +251,10 @@ const GridPhotoCell: React.FC<GridPhotoCellProps> = ({
         </span>
         <div className="flex items-center gap-0.5">
           {group.raw && (
-            <span className="text-[9px] text-blue-400 font-bold">R</span>
+            <span className="text-[9px] text-blue-400 font-medium">R</span>
           )}
           {group.hasXmp && (
-            <span className="text-[9px] text-amber-400 font-bold" title="包含 XMP">X</span>
+            <span className="text-[9px] text-amber-400 font-medium" title="包含 XMP">X</span>
           )}
         </div>
       </div>

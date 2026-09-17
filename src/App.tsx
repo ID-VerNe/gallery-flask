@@ -338,7 +338,7 @@ export default function App() {
   });
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#121316] text-[#e1e4ea] overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-[#121316] text-[#e1e4ea] overflow-hidden antialiased">
       {/* Top Controls Bar */}
       <TopBar
         jpgFolder={jpgFolder}

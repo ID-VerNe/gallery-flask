@@ -89,7 +89,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           aria-label="在修图或外部程序中打开"
         >
           <ExternalLink className="w-3 h-3" aria-hidden="true" />
-          <span>打开</span>
+          <span className="pb-[1px]">打开</span>
         </button>
       </div>
     </footer>

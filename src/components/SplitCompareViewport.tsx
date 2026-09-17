@@ -182,7 +182,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             title={isPinned ? `已锁定为基准 (按 B 或对应键取消)` : `点击锁定为固定对比基准 (快捷键: ${shortcutHint})`}
           >
             <Pin className={`w-3.5 h-3.5 ${isPinned ? 'fill-black' : ''}`} />
-            <span>{isPinned ? '基准参考 (固定)' : `设为基准 (${shortcutHint})`}</span>
+            <span className="pb-[1px]">{isPinned ? '基准参考 (固定)' : `设为基准 (${shortcutHint})`}</span>
           </button>
         </div>
 
@@ -270,7 +270,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             title="对调左右两张照片 (快捷键 S)"
           >
             <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400" />
-            <span>左右互换 (S)</span>
+            <span className="pb-[1px]">左右互换 (S)</span>
           </button>
 
           {/* Reset View button */}
@@ -300,7 +300,7 @@ export const SplitCompareViewport: React.FC<SplitCompareViewportProps> = ({
             aria-pressed={syncZoom}
           >
             {syncZoom ? <Link className="w-3 h-3" aria-hidden="true" /> : <Unlink className="w-3 h-3" aria-hidden="true" />}
-            <span>{syncZoom ? '联动同步开启' : '独立缩放'}</span>
+            <span className="pb-[1px]">{syncZoom ? '联动同步开启' : '独立缩放'}</span>
           </button>
         </div>
       </div>

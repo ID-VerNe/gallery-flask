@@ -168,13 +168,13 @@ pub fn scan_folders(
 
 fn merge_xmp_metadata_into_exif(exif: &mut Option<ExifData>, xmp_meta: &XmpMetadata) {
     if let Some(e) = exif.as_mut() {
-        if (e.lens_model.is_none() || e.lens_model.as_ref().map(|s| s.is_empty()).unwrap_or(true)) && xmp_meta.lens_model.is_some() {
+        if xmp_meta.lens_model.is_some() {
             e.lens_model = xmp_meta.lens_model.clone();
         }
-        if (e.focal_length.is_none() || e.focal_length.as_ref().map(|s| s.is_empty()).unwrap_or(true)) && xmp_meta.focal_length.is_some() {
+        if xmp_meta.focal_length.is_some() {
             e.focal_length = xmp_meta.focal_length.clone();
         }
-        if (e.aperture.is_none() || e.aperture.as_ref().map(|s| s.is_empty()).unwrap_or(true)) && xmp_meta.aperture.is_some() {
+        if xmp_meta.aperture.is_some() {
             e.aperture = xmp_meta.aperture.clone();
         }
     } else if xmp_meta.lens_model.is_some() || xmp_meta.focal_length.is_some() || xmp_meta.aperture.is_some() {

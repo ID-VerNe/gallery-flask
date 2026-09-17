@@ -51,7 +51,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenMetadataModal,
 }) => {
   return (
-    <header className="h-14 bg-[#18191e] border-b border-[#292c37] flex items-center justify-between px-3 gap-3 shrink-0 text-xs">
+    <header className="h-14 bg-[#18191e] border-b border-[#292c37] flex items-center justify-between px-3 gap-6 shrink-0 text-xs">
       {/* Folder Inputs */}
       <div className="flex items-center gap-2 flex-1 min-w-0 max-w-3xl">
         {/* JPG Folder */}
@@ -110,7 +110,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           aria-label={isLoading ? '正在扫描照片目录' : '扫描照片目录'}
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
-          <span>{isLoading ? '扫描中...' : '扫描照片'}</span>
+          <span className="pb-[1px]">{isLoading ? '扫描中...' : '扫描照片'}</span>
         </button>
       </div>
 
@@ -189,7 +189,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           aria-label="手动镜头与元数据批量编辑"
         >
           <Sliders className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
-          <span>手动镜头 (M)</span>
+          <span className="pb-[1px]">手动镜头 (M)</span>
         </button>
 
         {/* Batch Export */}
@@ -200,7 +200,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           aria-label="批量挑选导出照片"
         >
           <Download className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
-          <span>导出</span>
+          <span className="pb-[1px]">导出</span>
         </button>
 
         {/* Settings */}

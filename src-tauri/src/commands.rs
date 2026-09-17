@@ -93,9 +93,11 @@ pub async fn open_in_photoshop_cmd(
     state: State<'_, AppState>,
 ) -> Result<bool, String> {
     let settings = state.db.load_settings().unwrap_or_default();
-    let ps_path = custom_ps_path
+    let raw_ps_path = custom_ps_path
         .filter(|s| !s.trim().is_empty())
         .unwrap_or(settings.photoshop_path);
+
+    let ps_path = raw_ps_path.trim_matches(|c| c == '"' || c == '\'' || c == ' ').to_string();
 
     if !Path::new(&ps_path).exists() {
         // Fallback to default app
@@ -104,6 +106,8 @@ pub async fn open_in_photoshop_cmd(
 
     Command::new(&ps_path)
         .arg(&file_path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .spawn()
         .map_err(|e| format!("启动 Photoshop 失败 ({}): {}", ps_path, e))?;
 
